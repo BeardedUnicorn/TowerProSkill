@@ -61,6 +61,9 @@ IDENTITY_KEYS = [
 LABEL_KEYS = ['displayName', 'mappedName', 'name', 'label', 'slug', 'id', 'slotKey', 'category']
 
 # Paths that change constantly or say little; listed after everything else in a section.
+# Clock-driven fields: they change on every export and are never a decision the player made.
+TIMER_NOISE = re.compile(r'remainingSeconds|percentComplete|speedUpRemaining|RemainingSeconds', re.IGNORECASE)
+
 LOW_PRIORITY = re.compile(
     r'preset|skin|theme|autoPick|isNew|rerollCounter|remainingSeconds|percentComplete|'
     r'completeDate|completedAt|exportedAt|ThisCycle|unknownKeys|warnings|rawWeaponLevels|\.date$',
@@ -281,7 +284,13 @@ def per_hour(run, field):
 
 
 def run_stats(runs):
-    farming = [run for run in runs if isinstance(run, dict) and run.get('isTournament') is not True]
+    normal = [run for run in runs if isinstance(run, dict) and run.get('isTournament') is not True
+              and not run.get('dissonanceType')]
+    # "Full" farming runs only: drop aborted runs (well under half the typical length), so the
+    # median matches what the coach reports as income. Dissonant runs are excluded above.
+    typical = median([run['realTime'] for run in normal if is_number(run.get('realTime'))])
+    farming = [run for run in normal
+               if typical is None or not is_number(run.get('realTime')) or run['realTime'] >= 0.5 * typical]
     tournament = [run for run in runs if isinstance(run, dict) and run.get('isTournament') is True]
 
     def block(rows):
@@ -332,7 +341,8 @@ def runs_lines(report):
     old, new, since = report['old'], report['new'], report['sinceOld']
     lines = [
         'History holds %d runs (was %d); %d played since the older snapshot.' % (new['total'], old['total'], report['newRunCount']),
-        'Rates are per REAL hour (coinsEarned / realTime). Medians over the runs each snapshot holds.',
+        'Rates are per REAL hour (coinsEarned / realTime). Medians over full normal farming runs',
+        '(tournament, Dissonant and aborted runs excluded) that each snapshot holds.',
         '  farming coins/hr   %s' % delta_text(old['farming']['medianCoinsPerHour'], new['farming']['medianCoinsPerHour']),
         '  farming cells/hr   %s' % delta_text(old['farming']['medianCellsPerHour'], new['farming']['medianCellsPerHour']),
         '  farming wave       %s' % delta_text(old['farming']['medianWave'], new['farming']['medianWave']),
@@ -462,9 +472,12 @@ def build(old, new):
                                 'new': after.get('error') if state(after) == 'error' else state(after)})
         else:
             walk(before, after, '', changes)
+            changes = [change for change in changes if not TIMER_NOISE.search(str(change.get('path', '')))]
         if changes:
             sections.append({'reader': reader, 'title': section_title(reader), 'total': len(changes), 'changes': ordered(changes)})
+    changed = {section['reader'] for section in sections}
     return {
+        'unchanged': [reader for reader in names if reader not in changed],
         'old': old['meta'],
         'new': new['meta'],
         'elapsed': elapsed_text(old['meta'], new['meta']),
@@ -502,6 +515,10 @@ def render(report, cap, notes, old_path, new_path):
             lines.append(describe(change))
         if section['total'] > cap:
             lines.append('  ... and %d more (use --cap N or --json for all)' % (section['total'] - cap))
+
+    if report.get('unchanged') and report['sections']:
+        lines += ['', 'Unchanged since the old snapshot (nothing was spent or changed here): '
+                  + ', '.join(name.replace('read', '', 1).replace('FromSaveRoot', '') for name in report['unchanged'])]
 
     lines += ['', '## Run history']
     lines += runs_lines(report['runs'])

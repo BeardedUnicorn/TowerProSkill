@@ -149,6 +149,20 @@ Common sync shapes (BH : GT : DW), total stones from untouched cooldowns `[mecha
 - Bots `[mechanic]`: bot cooldown labs are permanent. Decide Golden Bot's target cooldown from the UW cycle (for example 100s or 120s against a 200s or 240s cycle) before researching.
 - Cost of being unsynced `[consensus]`: tower-hub estimates most coin income depends on GT and BH being active together; treat exact percentages as illustrative. The battle-report check is in `account-assessment.md`.
 
+### When Black Hole is not owned yet (GT + DW only)
+
+- `[consensus]` Matching Death Wave's cooldown to Golden Tower's is usually a no-regret buy when DW sits
+  above GT: GT cooldown only ever goes down, so any later sync needs those DW levels anyway. Price it level
+  by level with `uw.stoneCost`.
+- `[consensus]` Hold Golden Tower cooldown levels until Black Hole is owned, so the three can be brought to
+  a common ratio together rather than re-buying around a number chosen for two.
+- `[unverified]` How long a Death Wave tag lasts and whether its coin bonus needs the kill inside the GT
+  window is not in the SDK oracle. Do not quote a coin gain for a GT/DW match; say the direction is right
+  and the size is unknown.
+- Stone income for "how many weeks until the next unlock" comes from the reward tables in
+  `meta-tournaments.md` § rewards plus the account's own league history (`readTournamentsFromSaveRoot`) —
+  cross-check against lifetime stones earned ÷ account age, and give the range.
+
 ## 6. Perma targets
 
 "Perma" is community shorthand for duration at least equal to cooldown `[mechanic]` relationship, `[consensus]` goal. It is defined only for UWs that have both stats: BH, GT, CF, PS. P + initials composes (PBHGT = both permanently up). `[mechanic]` Since v29.1 a UW with full uptime (GT, CF, BH, PS) fires immediately at run start.

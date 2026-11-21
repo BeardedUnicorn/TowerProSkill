@@ -24,10 +24,18 @@ only it provides: `read_save_field`, `battle_history`, `patch_notes`. The server
 schemas are deferred in your environment, search for and load them first.
 
 If those tools are not available — including when a different Tower SDK server is connected — stop and
-tell the user how to set it up (clone `https://github.com/BeardedUnicorn/TheTowerSDK`, install and build it,
-register `node <repo>/mcp/server.mjs` as an MCP server, restart the session). Don't coach from memory or
-from another server: the whole point is advice grounded in their data and in verified mechanics, and
-without the server you have neither.
+help the user get set up instead of coaching. Don't coach from memory or from another server: the whole
+point is advice grounded in their data and in verified mechanics, and without the server you have neither.
+In that reply:
+
+- Say which case it looks like. Tower SDK tools present but missing the three above means an older or
+  different build (update or repoint it). No Tower tools at all means it is either not installed or
+  installed but failed to connect — ask them to check their MCP server list before reinstalling.
+- Give the setup steps: clone `https://github.com/BeardedUnicorn/TheTowerSDK`, install and build it as its
+  README describes, register `node <repo>/mcp/server.mjs` as an MCP server (config snippet in
+  `references/data-access.md` § preflight), restart the session.
+- Include how to produce `tool_export.json` (Step 1 and `references/data-access.md` § export locations) so
+  they can do both in one go, and ask about their goals so the next session starts faster.
 
 ## Step 1 — Find the export
 

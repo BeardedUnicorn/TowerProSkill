@@ -19,8 +19,8 @@ Everything here was checked against `BeardedUnicorn/TheTowerSDK` (`@beardedunico
 The MCP prefix differs per install (`mcp__thetowersdk__*`, `mcp__The_Tower_SDK__*`, ...), so tools are
 named here by bare name. Match on the suffix.
 
-It is the right server when **all four** of these exist: `read_save_field`, `battle_history`,
-`patch_notes`, `find_rows`. A server that has `decode_save` / `run_extractor` but not those four (checking the first three is enough) is an
+It is the right server when these exist: `read_save_field`, `battle_history`,
+`patch_notes`, `find_rows`. A server that has `decode_save` / `run_extractor` but lacks `read_save_field`, `battle_history` and `patch_notes` is an
 older or different build: stop and tell the player to install/update the BeardedUnicorn server
 (`claude mcp add thetowersdk -- node <path>/mcp/server.mjs`; a git checkout needs `pnpm build` first,
 because the server reads `dist/`). Do not fall back to anything else.
@@ -265,8 +265,9 @@ Never conclude "the player has none" from a preview: check `outlined`, `truncate
   `rarityEnum` is numeric (0 None, 1 Common, 2 Rare, 3 Rare+, 4 Epic, 5 Epic+, 6 Legendary, 7 Legendary+,
   8 Mythic, 9 Mythic+, 10 Ancestral, 11–15 Ancestral 1–5 stars).
 - **Lab timers are measured from `exportedAt`.** `researches[].remainingSeconds` for a lab in the active
-  queue is the game's own finish date minus `exportedAt` (it already includes relics, Vault and gem
-  speed-ups). For a lab not in the queue it is only a catalog estimate that ignores relics, Vault and gem
+  queue is the game's own finish date minus `exportedAt`. It reflects relics and Vault speed but **not** an
+  active cell/gem boost on the slot (`speedUpSpeed` > 1): the game's finish date assumes no boost, so a
+  boosted lab finishes sooner — give a range. For a lab not in the queue it is only a catalog estimate that ignores relics, Vault and gem
   speed-ups. Subtract the export's age before saying "finishes in X". `completeDate` is `null` for a lab
   never started (the save's `0001-01-01` placeholder).
 - **`speedUpSpeed` is the gem speed-up multiplier per lab slot**, not the Labs Speed research level;
@@ -300,9 +301,6 @@ Never conclude "the player has none" from a preview: check `outlined`, `truncate
   everything; do not present it as bot spending without cross-checking.
 - The server's own instructions tell agents to call `begin_mechanic_task` / `record_work_status` first.
   That is for editing the SDK's mechanics; a coach reading a save ignores it.
-- Lab `remainingSeconds` on a real save matched the un-boosted duration, i.e. an active cell speed-up
-  (`speedUpSpeed`, `speedUpRemainingSeconds`) did not appear to be included. Give finish times as a range
-  (boosted vs un-boosted) unless the player confirms what the game shows.
 - Pricing: `form_calc` (omit `id` to list) is much lighter than `calc_describe` + `calc_run` for labs
   (`lab.research` → coins and hours), module costs, UW stones and bot/guardian upgrades. `calc_describe`
   answers are large; call it only when a handle's parameters are unclear. `module.stat` takes
