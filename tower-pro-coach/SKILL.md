@@ -54,28 +54,41 @@ farm run that dies to the same enemy every time. If a reader fails or returns no
 the report instead of silently skipping it.
 
 Batch independent tool calls in parallel where your environment allows — a full read is roughly 30 readers.
+A narrow question still gets the full `decode_save` overview and every reader that could bear on it (for a
+stone question: currencies, ultimate weapons, cards, bots, tournaments, labs, runs); skim the rest.
+
+Check the player's premise against the data as you go. "I'm sitting on a pile of stones — GT, BH or DW?"
+may come from an account with few stones and no Black Hole. Say so kindly and answer the question they
+would have asked had they known.
 
 ## Step 3 — Snapshot and compare
 
-Run the bundled script to keep history (it stores reader output locally, keyed by a hash of the player ID):
+Run the bundled script to keep history (it stores reader output locally, keyed by a hash of the player ID).
+This records what you read for next time; it is not a substitute for reading through the MCP in Step 2.
 
 ```bash
 node <skill>/scripts/snapshot.mjs --export <path/to/tool_export.json> --sdk <path/to/TheTowerSDK>
 python3 <skill>/scripts/diff_snapshots.py --latest
 ```
 
+Both default to `~/.tower-coach/snapshots`; to use another folder pass `--out <dir>` to the snapshot and
+`--dir <dir>` to the diff.
+
 Snapshots live in `~/.tower-coach/snapshots/<playerKey>/`, next to an `advice-log.md` of what you
 recommended in earlier sessions. If a previous snapshot exists, the diff tells you what the player actually
 did since last time — open with that ("since the 12th you finished three labs and took GT cooldown down
 two levels") and check your earlier advice against it: what they followed, what they skipped, and whether
-the numbers moved the way you predicted. If you can't run scripts in this environment, skip this step and
-say that progress tracking is unavailable.
+the numbers moved the way you predicted. On a first session the diff exits saying there is only one snapshot — that is expected, not
+a failure. If you can't run scripts in this environment, skip this step and say that progress tracking is
+unavailable.
 
 ## Step 4 — Assess the account
 
 Read `references/account-assessment.md` and work through it. Establish, with numbers:
 
 - **Stage** — where the account sits on the progression ladder, and what matters most at that stage.
+- **Uptime** — what share of the clock the tower is in a run, and runs per day. Daily income is rate ×
+  time running; idle hours are frequently the biggest loss on the account.
 - **Economy** — farming tier, median coins/hour and cells/hour over recent runs (median, not best — plan
   on what reliably happens), run length, where the coins come from.
 - **How runs end** — killed by what, at what wave, and whether that is the same every run.
@@ -105,9 +118,12 @@ Load only the meta references the diagnosis points to:
 
 Then put numbers on the candidates:
 
-- **Costs and durations** come from the calculators, not memory: `calc_list` to find the handle,
-  `calc_describe` for its parameters, `calc_run` for the value (`lab.coinCost`, `lab.durationDays`,
-  `uw.stoneCost`, `uw.statValue`, `module.stat`, …). A recommendation the player can't afford for three
+- **Costs and durations** come from the calculators, not memory: `form_calc` for the common cases (lab
+  research, module cost, UW stones — small answers), or `calc_list` to find a handle, `calc_describe` for
+  its parameters when unclear (its answers are long), `calc_run` for the value (`lab.coinCost`, `lab.durationDays`,
+  `uw.stoneCost`, `uw.statValue`, `module.stat`, …). Read `calc_describe` before trusting a number — for
+  example `uw.stoneCost` prices a single level, so a three-level purchase is three calls summed, and a
+  wrong stat name returns `null` rather than an error. A recommendation the player can't afford for three
   months is a savings goal, and you can only tell which it is by pricing it against their income.
 - **Ordering** can be informed by `plan_effective_path` (damage / economy / health / regen). Treat it as a
   ranking aid and read its "left out and why" output; check what starting levels it used before trusting it.

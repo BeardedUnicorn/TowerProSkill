@@ -28,7 +28,7 @@ Mixing them causes two errors: presenting an opinion as a rule ("never level BH 
 
 A footgun is different from a slow choice. Unlocking lab slots late or skipping a tournament costs time; a footgun costs options.
 
-Before recommending any upgrade to a real account, call the MCP `oracle_footguns` and check the account with `get_export`.
+Before recommending any upgrade to a real account, call the MCP `oracle_footguns` and check the account's current levels in the save readers (`data-access.md`).
 
 ## 2. List A — objective permanence facts
 

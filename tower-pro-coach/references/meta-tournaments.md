@@ -182,7 +182,7 @@ What this means for old advice `[consensus]`
 
 ## 10. Tools
 
-- League, rank history and tickets for the account: `get_export`.
+- League, rank history and tickets for the account: the save readers (`run_extractor` / `read_save_field`, see `data-access.md`).
 - Reward rows, heat profiles, battle-condition definitions: `oracle_get` / `oracle_map` (system "tournament").
 - Enemy scaling at a wave: `calc_run` `enemy.healthWave100Multiplier`, `enemy.damageWave100Multiplier` (with the tournament flag), `enemy.bossWaveInterval`.
 - Stone prices for targets: `uw.stoneCost`, `uw.statValue`, `uw.maxLevel`.

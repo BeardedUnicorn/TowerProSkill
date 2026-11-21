@@ -11,7 +11,7 @@ Main sources
 
 Tag legend: `[mechanic]` verifiable rule; `[consensus]` community strategy; `[unverified]` unconfirmed or disputed; `[older]` pre-2026. Stage keys S0–S5 are defined in `account-assessment.md`.
 
-Costs and durations: never quote from a table in this file. Compute with the MCP: `calc_run` ids `lab.coinCost`, `lab.durationDays`, `lab.researchDays`, `lab.maxLevel`, `lab.value` / `lab.valueAtLevel`, `lab.coinDiscount`, `lab.speedTotal`, `lab.boost`, `lab.rush`, `workshop.upgradeTable`, `workshop.upgradeCeiling`, `workshop.discountPct`, `workshop.enhancementDefinitions`, `workshop.enhancementDiscountPct`. Use `calc_list` / `calc_describe` for inputs and `plan_effective_path` for ranked purchases.
+Costs and durations: never quote from a table in this file. Compute with the MCP: `calc_run` ids `lab.coinCost`, `lab.durationDays`, `lab.maxLevel`, `lab.valueAtLevel`, `lab.coinDiscount`, `lab.speedTotal`, `workshop.statDefinitions`, `workshop.enhancementDefinitions`, `workshop.sectionDiscountPct`, `workshop.enhancementDiscountPct` (confirmed present in SDK 1.0.0; always confirm an id with `calc_list` before relying on it). `form_calc lab.research` returns coins and hours for a lab level in one small answer and is the cheapest way to price a lab. No calculator was found that prices base workshop coin levels — say so rather than estimating, and have the player read the price in game. Use `plan_effective_path` for ranked purchases.
 
 ## Contents
 1. How the workshop works (what a coach must know first)
@@ -92,7 +92,7 @@ General reason behind most "don't": a workshop coin spent on a stat the farm bui
 
 ## 4. Workshop maxima and hard caps
 
-`[mechanic]` from the SDK tables (verify a specific level with `workshop.upgradeTable`):
+`[mechanic]` from the SDK tables (verify bounds with `workshop.statDefinitions`):
 - Health, Damage, Health Regen: 6000 levels each. Attack Speed 99 levels to 5.95. Critical Chance 79 levels to 80% (100% with other sources). Critical Factor 150 levels to x16.2. Super Crit Mult 120 levels to x13.2. Lifesteal 80 levels to 4.46%.
 - Defense %: 49.5% from workshop; hard cap 98% across all sources. Thorns 99% (49.5% vs bosses). Death Defy 30%. Knockback Chance 80%. Shockwave Frequency 14s from workshop (hard floor 7s). Wall Health 20% to 200% of tower health over 1800 levels; Wall Rebuild hard floor 150s.
 - Coins/Kill Bonus and Cash Bonus x2.49 (149 levels). Interest 5.94% (99 levels). Coins/Wave 150. Orbs 4 from workshop of 14 total (11 clockwise + 3 extra).

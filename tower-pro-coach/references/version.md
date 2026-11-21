@@ -103,7 +103,7 @@ If the export shows v30 or later, assume the "cannot join a tournament during a 
 
 Run this at the start of every coaching session.
 
-1. Read the game version from the export (`get_export`). Compare with the pin, **v29.2.1**.
+1. Read the game build from the export (`readExportInfoFromSaveRoot` → `versionNumber`; the snapshot's `meta.gameVersion` names it when the SDK knows the build). Compare with the pin, **v29.2.1**.
 2. **Same version** → use the references as written.
 3. **Export is older** → the player has not updated. Tournaments are version-locked, so tell them to update before the next one. Advice here may describe features they do not have yet.
 4. **Export is newer** → before giving advice in any affected area:

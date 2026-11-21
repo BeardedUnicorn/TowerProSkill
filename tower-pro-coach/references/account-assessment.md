@@ -39,6 +39,8 @@ Placing an account:
 - Signals often disagree — that is information, not noise. Take the stage most signals agree on and name
   the outliers explicitly: "S3 economy with S1 modules" tells you where the gap is, and the lagging system
   is usually where the cheapest gains are.
+- Judge modules by what they are, not the rarity label: four Legendary modules merged up from rares (no
+  unique effects) are an S1 module setup, not S3. See `data-access.md` § quirks for telling them apart.
 - Paying accounts run ahead on modules/cards/gems relative to labs and workshop (time-gated). Don't infer
   stage from module rarity alone. `readPurchasesFromSaveRoot` shows pack ownership; note it neutrally —
   packs multiply coin income, so absolute coins/hour comparisons against guides shift with them.
@@ -103,7 +105,7 @@ Fill this in before forming an opinion. If a line can't be filled, it goes under
 | Relics / themes | count unlocked, notable missing ones, themes owned (passive coin bonus) | Relics, Themes, CollectedThemeNames |
 | Perks | bans, first-perk choice, auto-pick order | PerkChoices |
 | Tournaments / events | current and highest league, recent results, event medals | Tournaments, Events |
-| Dissonance | cycle state, which boosts are active, whether it is being used at all | DissonanceCycleWaves, run `dissonanceType` |
+| Dissonance | which boosts are earned and at what wave, whether Dissonant Runs are being done at all | `calc_run save.readDissonanceBoostWavesByType` (savePath), run `dissonanceType` |
 | Runs | the last 30 runs, in full | battle history |
 | Settings | target priority, range selection, orb distances, life-saving order | RuntimeControls |
 
@@ -125,6 +127,10 @@ mixing them makes every median meaningless. Then, per group and per tier:
   appears, say that the comparison can't be made and suggest a test run one tier up or down.
 - **How runs end**: tabulate `killedBy` and the death wave. A consistent killer at a consistent wave is a
   wall you can name and address; scattered causes suggest a build that simply runs out of scaling.
+- **Uptime**: the share of the clock the tower is actually in a run. Sum real run time over the window the
+  30 runs span and divide by that window; also count runs per day. Daily income = coins/hour × hours in a
+  run, so an account that is in a run a third of the day has a bigger lever in "start another run" than in
+  any upgrade. This is often the largest single finding — compute it every time.
 - **Run length**: real hours per run vs how the player plays (overnight, attended). A run that ends after
   3 hours wastes an 8-hour night; a 14-hour run wastes the time between restarts if nobody is there.
 - **Coin sources**: share of coins from GT, BH, DW, Spotlight, wave skip, coin upgrades, bots, guardian.

@@ -171,7 +171,7 @@ Which first `[consensus, thin]`: Bonus Cells for lab speed if cells are the bott
 - Value order: **Lab Speed** (compounds over the whole account) → **Coin Bonus** → the stat your build is short of. Because same-stat relics add, each new one is worth less in relative terms as the pile grows; a first relic in a new stat can beat a tenth in an old one.
 - Never skip a time-limited lab-speed or coin relic for a bot level.
 - Gem relics (600 / 1,200) compete with modules and cards. Mid-game and later, a lab-speed or coin relic is usually worth it; cosmetic-stat relics are not.
-- Published community totals for relic bonuses disagree with the game's own relic list; use `get_export` for what an account really has.
+- Published community totals for relic bonuses disagree with the game's own relic list; use the save readers (`run_extractor` / `read_save_field`, see `data-access.md`) for what an account really has.
 
 ## 8. Themes, skins and songs
 
@@ -223,6 +223,6 @@ Ranks 16–24 in Legend earn one key per tournament, about two a week. At that r
 - Bot stat ceilings and names: `calc_run` `bot.statMaxLevel`, `bot.statNames`, `bot.findByName`.
 - Guardian tracks and bounds: `guardian.definitions`, `guardian.statBounds`.
 - Vault upgrade costs and values, relic lists, theme catalog: `oracle_get` / `oracle_map`.
-- What the account owns (bots, chips, relics, themes, keys, medals, bits): `get_export`.
+- What the account owns (bots, chips, relics, themes, keys, medals, bits): the save readers (`run_extractor` / `read_save_field`, see `data-access.md`).
 - UW cooldowns for sync targets: `uw.statValue` with stat "Cooldown".
 - Irreversibility check before any cooldown advice: `oracle_footguns`.

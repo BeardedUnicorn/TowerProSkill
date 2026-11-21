@@ -13,7 +13,24 @@ Tag legend: `[mechanic]` verifiable rule; `[consensus]` community strategy; `[un
 
 The SDK oracle is explicit: UW pick order, whether a sync target is worth chasing, and every "perma"/quantity target are opinion. Only permanence, stat ranges and stone prices are mechanics. Keep that split when advising.
 
-Stone prices: compute with `calc_run` `uw.stoneCost` (cost from current level to target), `uw.statValue`, `uw.maxLevel`, `uw.statLevel`. Totals quoted here are from the shipped chart and are for orientation.
+Stone prices: compute with `calc_run` `uw.stoneCost` — it returns the price of the **single level** passed as `level` (the level being bought), so a multi-level purchase is the sum of one call per level. Also `uw.statValue`, `uw.maxLevel`, `uw.statLevel`. Unlock prices are positional and have no calculator (`uw.stoneCost` returns `null` at level 0).
+
+Exact `weapon` / `stat` strings the calculators accept (the fourth stat is the UW+ ability). A wrong name returns `null` with no error, the same as an unpriced level — if you get `null`, check the name first:
+
+| weapon | stat |
+|---|---|
+| Golden Tower | Multiplier, Duration, Cooldown, Golden Combo |
+| Black Hole | Size, Duration, Cooldown, Consume |
+| Death Wave | Damage, Quantity, Cooldown, Kill Wall |
+| Spotlight | Multiplier, Angle, Quantity, Light Range |
+| Chrono Field | Duration, Speed, Cooldown, Chrono Loop |
+| Chain Lightning | Damage, Quantity, Chance, Smite |
+| Smart Missiles | Damage, Quantity, Cooldown, Cover Fire |
+| Inner Land Mines | Damage, Quantity, Cooldown, Charged Mines |
+| Poison Swamp | Damage, Duration, Cooldown, Death Creep |
+
+("Bonus" in this file's prose for Golden Tower and Spotlight is the `Multiplier` stat.)
+ Totals quoted here are from the shipped chart and are for orientation.
 
 ## Contents
 1. Rules that never change (permanence, pricing, the stone pool)

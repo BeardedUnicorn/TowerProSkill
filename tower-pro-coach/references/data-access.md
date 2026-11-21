@@ -20,7 +20,7 @@ The MCP prefix differs per install (`mcp__thetowersdk__*`, `mcp__The_Tower_SDK__
 named here by bare name. Match on the suffix.
 
 It is the right server when **all four** of these exist: `read_save_field`, `battle_history`,
-`patch_notes`, `find_rows`. A server that has `decode_save` / `run_extractor` but not those four is an
+`patch_notes`, `find_rows`. A server that has `decode_save` / `run_extractor` but not those four (checking the first three is enough) is an
 older or different build: stop and tell the player to install/update the BeardedUnicorn server
 (`claude mcp add thetowersdk -- node <path>/mcp/server.mjs`; a git checkout needs `pnpm build` first,
 because the server reads `dist/`). Do not fall back to anything else.
@@ -130,7 +130,7 @@ feature; most carry `warnings: string[]` — a non-empty one usually means the s
 | `readWorkshopUnlocksFromSaveRoot` | Rows unlocked per category | `upgradeTiersUnlocked`, `enhancementTiersUnlocked` (`{attack, defense, utility}`), `freeUpgradeLocked[]`. |
 | `readLabsFromSaveRoot` | Research levels, queue, completion log | `researches[]` `{index, level, displayName, slug, category, percentComplete, completeDate, remainingSeconds}`; `activeQueue[]` `{slotIndex, active, speedUp, speedUpRemainingSeconds, research}`; `completions[]` `{researchIndex, level, completedAt}` oldest first; `labsUnlocked`, `researchedCount`, `maxedCount`, `totalCoinsSpentOnResearch`. Seconds throughout. See §7 for timers. Rows with `displayName: null` are hidden/unnamed (`hiddenUnnamedCount`). |
 | `readFavoriteLabSlugsFromSaveRoot` | Starred labs | `string[]`; empty when none starred. |
-| `readUltimateWeaponsFromSaveRoot` | UW unlocks and levels | `slots[]` `{slotIndex, unlocked, active, plusLevel, plusUnlocked, plusOn, baseStatLevels[3]}`. **No names**: `slotIndex` 0–8 = Chain Lightning, Smart Missiles, Death Wave, Chrono Field, Inner Land Mines, Golden Tower, Poison Swamp, Black Hole, Spotlight. Trust `baseStatLevels` only when `baseStatChunkingPlausible` is true. |
+| `readUltimateWeaponsFromSaveRoot` | UW unlocks and levels | `slots[]` `{slotIndex, unlocked, active, plusLevel, plusUnlocked, plusOn, baseStatLevels[3]}`. **No names**: `slotIndex` 0–8 = Chain Lightning, Smart Missiles, Death Wave, Chrono Field, Inner Land Mines, Golden Tower, Poison Swamp, Black Hole, Spotlight. `baseStatLevels[3]` follows the first three stats of each weapon in the order listed in `meta-ultimate-weapons.md` (e.g. Golden Tower: Multiplier, Duration, Cooldown) — sanity-check one value against what the player sees. Trust `baseStatLevels` only when `baseStatChunkingPlausible` is true. |
 | `readCardsFromSaveRoot` | Card levels, copies, slots | `cards[]` `{slug, name, level, count, unlocked, active, masteryUnlocked}`, `equippedCards[]`, `slotsUnlocked`, `currentPreset`, `presetNames`, `presetSlots[]` (flat, per preset × slot). `count` = spare copies toward the next level, not a lifetime total. |
 | `readModulesFromSaveRoot` | Equipped and owned modules, shard balances | `equipped[]` `{slotKey ("primary:Cannon" … "assist:Core"), role, category, mappedName, mappedInitials, level, rarityLabel, rarityEnum, effects[], effectLocked[], guid, shardsSpent, coinsSpent}`; `inventory[]` same minus slot fields; `shards` `{cannon, armor, generator, core, rerollCurrency, tickets}`. `equipped[].level` is the **slot** level (§7). `coinsSpent` is approximate above ~9e15. |
 | `readModuleEconomyFromSaveRoot` | Slot levels, pity, assist slots, module presets | `slotLevels[4]` (Cannon, Armor, Generator, Core), `slotCoinsSpent`, `slotShardsSpent`, `pity` / `rarePity` (pulls since last epic / rare), `assistSlots[]` `{category, unlocked, level, mainEffectEfficiencyLevel, substatEfficiencyLevel, uniqueEffectEfficiencyLevel}`, `presets[]` (module GUIDs per slot), `epicObtained`, `merges`, `gemsSpent`, `lifetimeShards`. |
@@ -142,7 +142,7 @@ feature; most carry `warnings: string[]` — a non-empty one usually means the s
 | `readTierRecordsFromSaveRoot` | Per-tier bests | `tiers[]` `{tier, highestWave, highestWaveThisCycle, roundsStarted, highestCoinsEarned, highestCellsEarned}`, `currentTier`. `currentTier` is the tier selected now, often **not** the highest reached. |
 | `readMilestonesFromSaveRoot` | Milestone claims | `tiers[]` `{tier, claimedSlots[], premiumClaimedSlots[], premiumUnlocked}`, `slotsPerTier`. |
 | `readPerkChoicesFromSaveRoot` | Perk bans and auto-pick | `bannedIndices`, `firstPerkIndex`, `firstTradeOffPerkIndex`, `autoPickPerk`, `autoPickOrder`. Indices only — name them with `find_rows {name: "PERK_IMPORT_CATALOG", where: {index: N}}`, never from memory. |
-| `readDissonanceCycleWavesFromSaveRoot` | Best wave per tier this dissonance cycle | `cycleWaves[]` indexed by tier number (slot 0 empty), `layout`. |
+| `readDissonanceCycleWavesFromSaveRoot` | Per-tier waves the Dissonance cycle is measured against — **not** the Dissonant-run bests. For best wave per Dissonance type use `calc_run save.readDissonanceBoostWavesByType` with `savePath`. | `cycleWaves[]` indexed by tier number (slot 0 empty), `layout`. |
 
 ### Economy & history
 
@@ -220,16 +220,12 @@ drag around. Compare game-time rates only when asking "what would a different ga
 
 ## 6. Read-everything call sequence
 
-**Fast path (shell available): one command, then read the file.**
+The export is read **through the MCP** — that is the supported path, it works without a shell, and its
+answers carry the SDK's warnings and decoding. The snapshot script (`scripts/snapshot.mjs`) is for keeping
+history between sessions; once it has run, its JSON holds the same reader output and is a convenient place
+to re-look-up a detail you already read, but it does not replace the read below.
 
-```bash
-node <skill>/scripts/snapshot.mjs --export <abs path> --sdk <path to TheTowerSDK>
-```
-
-It runs every reader plus the run list and writes one JSON (`readers.<readerName>`, `runs[]`, `meta`).
-Read from that file with `jq`/Python and use the MCP only for game data, calculators and the oracle.
-
-**MCP-only path (~35 calls; batch the independent ones in parallel):**
+**Call sequence (~35 calls; batch the independent ones in parallel):**
 
 1. `decode_save {path}` — reader list, which are `found`, warning counts, run count.
 2. `run_extractor` for `readExportInfoFromSaveRoot` — check `exportedAt`, `checked`, `warnings`.
@@ -295,3 +291,30 @@ Never conclude "the player has none" from a preview: check `outlined`, `truncate
   `SR` is both Shrink Ray and Solar Reflector), never from memory.
 - **Privacy.** The export contains the player ID and user name at the top level. No reader returns them;
   do not read them from the raw file, and never write them into notes, snapshots or messages.
+- `uw.stoneCost` / `uw.statValue` return `null` both for a wrong `weapon`/`stat` string and for a level with
+  no price. Check the exact strings in `meta-ultimate-weapons.md` before concluding a level is unavailable.
+  `uw.stoneCost` prices one level; sum a range level by level.
+- `readLabsFromSaveRoot.labsUnlocked` has been seen one lower than the number of active queue slots. Count
+  slots from `activeQueue` (and which have `active: true`) when checking for an idle slot.
+- `readBotsFromSaveRoot.totalStonesSpent` has been seen equal to the account's lifetime stones spent on
+  everything; do not present it as bot spending without cross-checking.
+- The server's own instructions tell agents to call `begin_mechanic_task` / `record_work_status` first.
+  That is for editing the SDK's mechanics; a coach reading a save ignores it.
+- Lab `remainingSeconds` on a real save matched the un-boosted duration, i.e. an active cell speed-up
+  (`speedUpSpeed`, `speedUpRemainingSeconds`) did not appear to be included. Give finish times as a range
+  (boosted vs un-boosted) unless the player confirms what the game shows.
+- Pricing: `form_calc` (omit `id` to list) is much lighter than `calc_describe` + `calc_run` for labs
+  (`lab.research` → coins and hours), module costs, UW stones and bot/guardian upgrades. `calc_describe`
+  answers are large; call it only when a handle's parameters are unclear. `module.stat` takes
+  `{type, rarityLabel, level}`; a wrong key silently returns 1.
+- Module `effects[]` are numeric ids: name them with `find_rows {name: "MODULE_SAVE_EFFECT_ID_LABELS"}`.
+  The roll's rarity is not recoverable through the MCP.
+- The reader has no "natural epic" flag. A module whose `mappedName` is not one of the epic modules listed
+  in `meta-modules-cards.md` § unique effects is a rare-family module merged upward: it has no unique
+  effect and cannot pass Legendary+. Cross-check with `readModuleEconomyFromSaveRoot.epicObtained`.
+- `readLifetimeBreakdownFromSaveRoot.killsBySource` has shown `projectiles` and `deathRay` apparently
+  swapped relative to per-run stats. Prefer the per-run kill split.
+- `readCurrenciesFromSaveRoot.earnedThisCycle` / `spentThisCycle`: the cycle length is not documented; do
+  not turn them into weekly rates. `battleDate` on a run appears to be the run's end time.
+- `plan_effective_path`: `cost` and `roi` units are per variant (time, coins or stones) and it can report
+  "prerequisite not met" for labs the account already has. Use the ordering, not the absolute values.

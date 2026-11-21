@@ -257,5 +257,5 @@ Slot rule: buy a slot only when a card that would help the current build is wait
 - Assist contribution: `assist.substatCap`.
 - Stone prices for UW stats when weighing assists and masteries against them: `uw.stoneCost`, `uw.statValue`.
 - Any single entity (a module, a mastery, a lab): `oracle_get`; names: `oracle_search`.
-- What the account actually owns and has equipped: `get_export`.
+- What the account actually owns and has equipped: the save readers (`run_extractor` / `read_save_field`, see `data-access.md`).
 - Acronyms: `oracle_expand` / `define_term`.

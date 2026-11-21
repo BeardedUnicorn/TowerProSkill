@@ -11,7 +11,7 @@ Main sources
 
 Tag legend: `[mechanic]` = verifiable game rule. `[consensus]` = community strategy/opinion. `[unverified]` = could not confirm or sources disagree. `[older]` = pre-2026 guidance. Stage keys S0–S5 are defined in `account-assessment.md`.
 
-Do not quote costs from memory. Use the MCP: `calc_run` with `lab.coinCost`, `lab.durationDays`, `lab.maxLevel`, `lab.boost`, `lab.rush`, `uw.stoneCost`, `uw.statValue`; `calc_list` to discover ids; `plan_effective_path` (eEcon variants `time` / `coin` / `stone`) for ranked economy purchases.
+Do not quote costs from memory. Use the MCP: `calc_run` with `lab.coinCost`, `lab.durationDays`, `lab.maxLevel`, `lab.speedTotal`, `uw.stoneCost`, `uw.statValue`; `calc_list` to discover ids; `plan_effective_path` (eEcon variants `time` / `coin` / `stone`) for ranked economy purchases.
 
 ## Contents
 1. How coins are actually made (the multiplier chain)
@@ -108,7 +108,7 @@ Decision rule: cells exist to buy lab time. Spread cheap boosts across every run
 
 - `[mechanic]` Only elites drop cells. Multipliers: Death Wave Cells Bonus lab (20 lv, to x3), Cells/Kill enhancement (300-level cap), Cells card (v29, rare, T4 W40, +2 to +14 applied last; mastery multiplier), Golden Bot's Bonus Cells Bot+, Wave Skip (x1.1 of previous wave).
 - `[mechanic]` Boosts are 1.5x up to 8x, sold for 1, 8 or 24 hours, and only tick while a lab is slotted. Each lab already boosted adds 20% of base price to the next (all five cost 7x one, not 5x). Cost grows far faster than the multiplier: 1.5x to 2x is 33% more speed for about 6.7x the cells.
-- `[unverified]` Exact prices: sources and the SDK's own table disagree (prices come from remote config). Community figures per lab-hour: 1.5x = 15, 2x = 100, 3x = 840, 4x = 3,360. Use `calc_run lab.boost` and tell the player to confirm in game.
+- `[unverified]` Exact prices: sources and the SDK's own table disagree (prices come from remote config). Community figures per lab-hour: 1.5x = 15, 2x = 100, 3x = 840, 4x = 3,360. No calculator prices boosts; tell the player to confirm the price in game.
 - `[consensus]` Policy: 1.5x on all running labs, then 2x on all, and go higher only when cell income refills it. An account banking cells with unboosted labs is time-limited by choice.
 - `[mechanic]` Labs Speed lab: 99 levels to x2.98 (T1 W150). Relics and milestones add lab speed. `[consensus]` Keep it running almost continuously to about level 60; payback lengthens toward 3 years near 99. `[older]` Early accounts may pause it for econ UW labs.
 - `[mechanic]` Gem rush skips the whole remaining time only; longer labs are discounted per unit time (0% at 1 hour to 61% at 360 days). `[consensus]` Rush only long labs, preferably when an event mission rewards research time; never short labs.
