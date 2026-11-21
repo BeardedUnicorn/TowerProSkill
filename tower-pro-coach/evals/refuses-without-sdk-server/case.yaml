@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: refuses-without-sdk-server
+expected_outcome: |
+  The coach does not give account advice from memory. It explains that the BeardedUnicorn/TheTowerSDK MCP server is required and gives the setup steps and how to export the save.

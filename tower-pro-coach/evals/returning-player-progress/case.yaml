@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: returning-player-progress
+expected_outcome: |
+  The coach saves a new snapshot, compares it with the previous one, reports what changed and how earlier advice fared, then gives updated next steps.

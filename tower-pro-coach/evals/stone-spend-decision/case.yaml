@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: stone-spend-decision
+expected_outcome: |
+  A direct recommendation for the stones the account actually holds, based on the UW levels, sync state and stone balance read from the export, with real stone costs and an explicit note that UW picks and stat levels cannot be undone.

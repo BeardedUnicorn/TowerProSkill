@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "thetowersdk": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["/absolute/path/to/TheTowerSDK/mcp/server.mjs"]
+    }
+  }
+}
