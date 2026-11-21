@@ -316,3 +316,14 @@ Never conclude "the player has none" from a preview: check `outlined`, `truncate
   not turn them into weekly rates. `battleDate` on a run appears to be the run's end time.
 - `plan_effective_path`: `cost` and `roi` units are per variant (time, coins or stones) and it can report
   "prerequisite not met" for labs the account already has. Use the ordering, not the absolute values.
+- `form_calc lab.research` needs the account's lab speed and coin discount as inputs. Speed percent that
+  matched `lab.durationDays` on a real save: ((1 + 0.02 × Labs Speed lab level) × (1 + lab-speed relic
+  bonus) × slot boost − 1) × 100; coin discount from `calc_run lab.coinDiscount` with the Labs Coin Discount
+  lab level. Verify one known lab (cost shown in game or a queued lab's duration) before pricing a list.
+- With Auto Export on, the game rewrites `tool_export.json` while you work. Note `exportedAt` at the first
+  read; if the snapshot or a later read shows a newer one, say which export the numbers come from.
+- `battle_history`/`read_save_field` page about ten columns of 30 runs per call. Read income, length, tier,
+  killer and coin-source columns that way; the long tail of ~150 per-run stats (kill and damage by source,
+  mitigation) is practical to read from the snapshot JSON once it exists.
+- `readPerkChoicesFromSaveRoot.autoPickOrder` is the player's ranking of perks; how many ranks are honoured
+  depends on the Auto Pick Ranking lab level. Check that lab before saying a low-ranked perk never gets picked.

@@ -151,11 +151,16 @@ Common sync shapes (BH : GT : DW), total stones from untouched cooldowns `[mecha
 
 ### When Black Hole is not owned yet (GT + DW only)
 
-- `[consensus]` Matching Death Wave's cooldown to Golden Tower's is usually a no-regret buy when DW sits
-  above GT: GT cooldown only ever goes down, so any later sync needs those DW levels anyway. Price it level
-  by level with `uw.stoneCost`.
+- Judgement call, state both sides. For matching Death Wave's cooldown down to Golden Tower's when DW sits
+  above GT: cooldowns only ever go down and the end-state sync has DW well below its starting value, so
+  those DW levels are not wasted in the long run, and they are cheap. Against: every stone spent now
+  delays the Black Hole unlock, and the coin gain from a GT/DW match alone cannot be quantified (next
+  point). `[consensus]` leans to unlocking first when the unlock is close and taking the cheap match when
+  the unlock is months away — give the player the cost in weeks of delay and let them choose.
 - `[consensus]` Hold Golden Tower cooldown levels until Black Hole is owned, so the three can be brought to
   a common ratio together rather than re-buying around a number chosen for two.
+- `plan_effective_path` does not value a UW the account does not own, so an unlock-versus-upgrade decision
+  has to be argued from these references; say that it is reasoning, not calculator output.
 - `[unverified]` How long a Death Wave tag lasts and whether its coin bonus needs the kill inside the GT
   window is not in the SDK oracle. Do not quote a coin gain for a GT/DW match; say the direction is right
   and the size is unknown.

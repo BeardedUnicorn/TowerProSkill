@@ -46,6 +46,8 @@ Stages: New · Early · Mid · Late · Endgame.
 
 ## 3. Leagues, difficulty and rewards
 
+The table below lists selected rank bands, not every rank. For a band it skips, interpolate between its neighbours, say that it is an estimate, and cross-check against the account's own stone history.
+
 `[mechanic]` Difficulty is "tier+": enemy stats (health, attack, mass, speed pressure) scale faster than the campaign tier of the same number.
 
 | League | Tier+ base | Boss every | Random conditions | Always on |
