@@ -15,8 +15,8 @@
  * Output: <out>/<playerKey>/<YYYY-MM-DD>T<HHMM>.json  (local time of the snapshot)
  *   { meta: {...}, readers: { <readerName>: <result> | null | { error } }, runs: [...] }
  *
- * playerKey is a short hash of the player ID. The raw ID and the user name are never written,
- * and the script refuses to write a file in which either appears.
+ * playerKey is a short hash of the player ID. The raw ID and the user name are stripped from
+ * reader output, and the script refuses to write a file in which either still appears.
  */
 import { createHash } from 'node:crypto'
 import fs from 'node:fs'
@@ -189,6 +189,19 @@ function hasStringValue(value, wanted) {
   return false
 }
 
+/** A copy of a plain JSON tree with every string that is, or contains, a `secrets` entry replaced. */
+function redact(value, secrets) {
+  if (typeof value === 'string') {
+    if (secrets.exact.includes(value)) return '[redacted]'
+    return secrets.anywhere.reduce((text, secret) => text.split(secret).join('[redacted]'), value)
+  }
+  if (Array.isArray(value)) return value.map(item => redact(item, secrets))
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, redact(item, secrets)]))
+  }
+  return value
+}
+
 // ---------------------------------------------------------------------------------------------
 // Snapshot
 // ---------------------------------------------------------------------------------------------
@@ -344,8 +357,10 @@ async function main() {
       runCount: runs.length,
       ...(runsError ? { runsError } : {}),
     },
-    readers,
-    runs,
+    // Readers such as readProfileFromSaveRoot return the player ID and user name. Strip them: the
+    // ID wherever it appears, the name only where a value IS the name (it can be an ordinary word).
+    readers: redact(readers, { exact: userName ? [userName] : [], anywhere: playerId.length >= 6 ? [playerId] : [] }),
+    runs: redact(runs, { exact: userName ? [userName] : [], anywhere: playerId.length >= 6 ? [playerId] : [] }),
   }
 
   const json = `${JSON.stringify(snapshot, null, 1)}\n`
