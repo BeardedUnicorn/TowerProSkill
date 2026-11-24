@@ -85,17 +85,39 @@ Restart Claude so the server connects.
 
 ### 2. Install the skill
 
+This repository is a plugin marketplace, so the easiest route is to install the coach as a plugin. The
+plugin still needs the TheTowerSDK server from step 1.
+
+**Claude desktop app:** open **Plugins → Add → Add marketplace**, enter `BeardedUnicorn/TowerProSkill` and
+press **Sync**, then install **tower-pro-coach** from the list.
+
+**Claude Code:**
+
+```
+/plugin install tower-pro-coach --marketplace BeardedUnicorn/TowerProSkill
+```
+
+On Claude Code older than 2.1.275, add the marketplace first, then install:
+
+```
+/plugin marketplace add BeardedUnicorn/TowerProSkill
+/plugin install tower-pro-coach@tower-pro-skill
+```
+
+Run `/plugin marketplace update tower-pro-skill` to pick up new strategy updates.
+
+**Without plugins:** clone the repository and copy the skill folder into your skills directory:
+
 ```bash
 git clone https://github.com/BeardedUnicorn/TowerProSkill.git
 ```
-
-Copy the skill folder into your skills directory:
 
 ```bash
 cp -r TowerProSkill/tower-pro-coach ~/.claude/skills/
 ```
 
-For the Claude apps, zip the `tower-pro-coach` folder and upload it under Settings → Capabilities → Skills.
+To upload it to the Claude apps instead, zip the `tower-pro-coach` folder and upload it under Settings →
+Capabilities → Skills.
 
 ### 3. Export your save from the game
 
@@ -145,6 +167,8 @@ is stored in this repository.
 ## Repository layout
 
 ```
+.claude-plugin/
+  marketplace.json         plugin marketplace manifest (one plugin: tower-pro-coach)
 tower-pro-coach/
   SKILL.md                 the coaching workflow
   references/              data access, account assessment, strategy by system, footguns, glossary, version
@@ -176,7 +200,7 @@ location, because the isolated home hides the game's folder:
 Then run one case at a time (`--case` takes a single name or glob):
 
 ```bash
-claude plugin eval tower-pro-coach --case full-account-review --mocks off --ablation none --allow-tools Bash Write Edit mcp__plugin_tower-pro-coach_thetowersdk
+claude plugin eval ./tower-pro-coach --case full-account-review --mocks off --ablation none --allow-tools Bash Write Edit mcp__plugin_tower-pro-coach_thetowersdk
 ```
 
 `--mocks off` starts the real server as you, outside the sandbox. Run `refuses-without-sdk-server` with
