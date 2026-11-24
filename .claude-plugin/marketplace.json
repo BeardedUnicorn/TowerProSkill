@@ -1,0 +1,24 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "tower-pro-skill",
+  "description": "Pro-level coaching for The Tower – Idle Tower Defense, grounded in your own game export.",
+  "owner": {
+    "name": "BeardedUnicorn",
+    "url": "https://github.com/BeardedUnicorn"
+  },
+  "plugins": [
+    {
+      "name": "tower-pro-coach",
+      "description": "Coaches your account in The Tower – Idle Tower Defense: reads your tool_export.json through the TheTowerSDK MCP server and ranks the highest-value next steps with real costs. Requires the TheTowerSDK MCP server.",
+      "source": "./",
+      "strict": false,
+      "skills": ["./tower-pro-coach"],
+      "author": {
+        "name": "BeardedUnicorn"
+      },
+      "homepage": "https://github.com/BeardedUnicorn/TowerProSkill",
+      "category": "games",
+      "keywords": ["the-tower", "idle-tower-defense", "game-coach", "strategy"]
+    }
+  ]
+}
