@@ -11,7 +11,7 @@ Main sources
 
 Tag legend: `[mechanic]` verifiable rule; `[consensus]` community strategy; `[unverified]` unconfirmed or disputed; `[older]` pre-2026. Stage keys S0–S5 are defined in `account-assessment.md`.
 
-Costs and durations: never quote from a table in this file. Compute with the MCP: `calc_run` ids `lab.coinCost`, `lab.durationDays`, `lab.maxLevel`, `lab.valueAtLevel`, `lab.coinDiscount`, `lab.speedTotal`, `workshop.statDefinitions`, `workshop.enhancementDefinitions`, `workshop.sectionDiscountPct`, `workshop.enhancementDiscountPct` (confirmed present in SDK 1.6.0; always confirm an id with `calc_list` before relying on it). `form_calc lab.research` returns coins and hours for a lab level in one small answer and is the cheapest way to price a lab. No calculator was found that prices base workshop coin levels — say so rather than estimating, and have the player read the price in game. Use `plan_effective_path` for ranked purchases.
+Costs and durations: never quote from a table in this file. Compute with the MCP: `calc_run` ids `lab.coinCost`, `lab.durationDays`, `lab.maxLevel`, `lab.valueAtLevel`, `lab.coinDiscount`, `lab.speedTotal`, `workshop.statDefinitions`, `workshop.enhancementDefinitions`, `workshop.sectionDiscountPct`, `workshop.enhancementDiscountPct` (confirmed present in SDK 1.7.1; always confirm an id with `calc_list` before relying on it). `form_calc lab.research` returns coins and hours for a lab level in one small answer and is the cheapest way to price a lab. No calculator was found that prices base workshop coin levels — say so rather than estimating, and have the player read the price in game. Use `plan_effective_path` for ranked purchases.
 
 ## Contents
 1. How the workshop works (what a coach must know first)
@@ -196,7 +196,7 @@ How to tell which: compare coins on hand and daily income with the summed cost o
 2. For each, get next-level `lab.coinCost` (after `lab.coinDiscount`) and `lab.durationDays` (after `lab.speedTotal` and any boost), and the value change from `lab.valueAtLevel`.
 3. Convert the value change to the account-level metric it feeds: coins/hour (economy), eHP or eRegen (survival), eDamage (damage). The Effective Paths method does exactly this: one number per account per model, candidate scored by change in that number divided by cost.
 4. Rank by gain per coin when coin-starved and gain per research-day when time-starved. The same candidates rank differently under the two; that is the point (`plan_effective_path` variants `lab-coins` vs `lab-time`).
-5. Caveats `[mechanic]`: the planner is greedy, so it can miss an upgrade whose payoff arrives levels later (breakpoints such as perma targets, quantity, thorns hit counts); an empty plan with `issues` populated means bad inputs, not a finished account; do not double-fill `lab` and `coin` level bands.
+5. Caveats `[mechanic]`: the planner is greedy, so it can miss an upgrade whose payoff arrives levels later (breakpoints such as perma targets, quantity, thorns hit counts — compute those with `calc_run` `mechanics.thornsHitsToKill` `{percentOfMaxHealth, isBoss}`); an empty plan with `issues` populated means bad inputs, not a finished account; do not double-fill `lab` and `coin` level bands.
 6. Payback check for speed/discount labs: (time or coins saved per day across all running labs) vs (days the slot is occupied). Labs Speed pays back faster the more slots are running.
 
 ## 13. What v27–v29 changed

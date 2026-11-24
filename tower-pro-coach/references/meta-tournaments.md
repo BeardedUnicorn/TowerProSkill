@@ -188,6 +188,6 @@ What this means for old advice `[consensus]`
 
 - League, rank history and tickets for the account: the save readers (`run_extractor` / `read_save_field`, see `data-access.md`).
 - Reward rows, heat profiles, battle-condition definitions: `oracle_get` / `oracle_map` (system "tournament").
-- Enemy scaling at a wave: `calc_run` `enemy.healthWave100Multiplier`, `enemy.damageWave100Multiplier` (with the tournament flag), `enemy.bossWaveInterval`.
+- Enemy scaling at a wave: `calc_run` `enemy.healthWave100Multiplier`, `enemy.damageWave100Multiplier` (with the tournament flag), `enemy.bossWaveInterval`. Elite spawn chance and the diminishing curve on enemy level reductions: `mechanics.eliteSpawnSinglePercentAtRow`, `mechanics.eliteSpawnDoublePercentAtRow`, `mechanics.diminishedLevelReductions` (SDK 1.7.0+; read `calc_describe` for the inputs first).
 - Stone prices for targets: `uw.stoneCost`, `uw.statValue`, `uw.maxLevel`.
 - Patch changes since the pin: `patch_notes` (see `version.md`).

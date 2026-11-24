@@ -2,7 +2,7 @@
 
 Verified against game version: **v29.2.2** (build 1296; developer note dated 2026-11-21)
 Reference files written: 2026-11-20, updated 2026-11-24
-Verified against SDK: `@beardedunicorn/thetowersdk` **1.6.0**
+Verified against SDK: `@beardedunicorn/thetowersdk` **1.7.1**
 
 Main sources
 - SDK knowledge base (`TheTowerSDK`): `facts/v29.0.0`, `facts/v29.2.0`, `facts/v29.2.1`, `facts/v29.2.2` (286 on-screen readings of the live game, 2026-11-24, and the Milestones screen for tiers 1–15), compartments, and the patch-note archive (259 notes, 2021-07-15 to 2026-11-19, ingested from the official announcement channel). The archive has no entry for 29.2.2.
@@ -78,7 +78,7 @@ Community strategy lags the game. At the pin, almost no published guide covers v
 ### v29.2.2 (build 1296, note dated 2026-11-21)
 - Announced as a fix for delayed tournament rewards. No balance change known. `[mechanic, from the SDK version timeline; the note is not in the patch-note archive]`
 
-### Corrections from reading the live game (SDK 1.3.0–1.6.0, 2026-11-24)
+### Corrections from reading the live game (SDK 1.3.0–1.7.1, 2026-11-24)
 These are not game changes. They are things earlier SDK data, the wiki or guides had wrong, now checked on screen. `[mechanic]`
 - The Battle tab's **Total Coin Bonus** includes the selected tier's coin bonus and every row multiplies. Read it with `coin_bonus`.
 - Songs and profile banners pay a coin bonus (+0.6% each), like themes.
@@ -86,6 +86,7 @@ These are not game changes. They are things earlier SDK data, the wiki or guides
 - The Labs Speed lab speeds up its own research.
 - The gem price on a lab's Rush button is the list price divided by (1 + 0.015 × fully researched labs).
 - Milestone lab unlocks: the wiki listed six labs at milestones the game does not gate them at, and used placeholder names. The gates quoted in these files were re-checked against the corrected table on 2026-11-24 and all match.
+- The relics an event shop sells are not the relics the event awards. An event gives four relics of its own at 350 / 700 medals earned (550 / 1,100 with the event pass); its shop sells older relics from a past event for 200 (Rare) or 500 (Epic) medals. An event that returns brings new relics. Read both lists from `readEventShopFromSaveRoot` (`earnTrack`, `relics`).
 - A card that is maxed leaves the draw pool; six cards cannot be drawn until their milestone is claimed.
 - Still unexplained by the SDK (do not compute these, read them in game): Chain Lightning Quantity, Spotlight Bonus and Knockback Force as displayed.
 

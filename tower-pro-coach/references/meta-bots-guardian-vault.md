@@ -44,11 +44,11 @@ Why: medals and bits are calendar-paced, not skill-paced. A weekly or fortnightl
 - The event shop sells bots and bot levels, Bot+ levels, themes, songs, relics, stone and gem packs.
 - A gem-priced relic section (since v28) rotates weekly: two Rare (600 gems) and two Epic (1,200 gems) older event relics.
 - Event-store medal relics return only on event re-runs.
-- `readEventShopFromSaveRoot` lists the running event's shop: themes and songs with their coin bonus, and each relic with two different numbers. `price` is what the shop charges (Rare 200, Epic 500 medals); `earnThreshold` is the medals to **earn** during the event to be given the relic. Quote the right one. Rotating relics are priced in gems and the save does not say which are on the shelf.
+- `readEventShopFromSaveRoot` keeps two relic lists apart, and they are different relics. `earnTrack` is what the running event **awards**: four relics, given when the medals earned in the event reach `medals` (350 and 700 free; 550 and 1,100 need the paid event pass, `needsEventPass`). `relics` is what the shop **sells**: older relics from a past event (`fromEvent`), at `price` medals (Rare 200, Epic 500). Compare `medalsCurrentEvent` with the earn-track thresholds to say which awards are still in reach, and only count pass rows for a player who has the pass. Rotating relics are priced in gems and the save does not say which are on the shelf. The reader also lists themes and songs with their coin bonus.
 - v29.2 warns when a medal purchase would leave another bot preset in deficit.
 
 **Spending order** `[consensus, wiki Medals Guide]`
-1. High-value past relics when offered: lab speed and coin relics first.
+1. High-value past relics when offered (`relics[]` rows with `owned: false`): lab speed and coin relics first. The event's own relics (`earnTrack`) cost nothing; they come from earning medals, so finishing missions is what secures them.
 2. Themes and songs each event (about 400 medals an event for both): small permanent coin bonuses that add up.
 3. Stone packs: at most one or two; the price escalates. Many players skip them to fund bots.
 4. Gem packs: only while lab slots are still locked.
@@ -227,6 +227,7 @@ Ranks 16–24 in Legend earn one key per tournament, about two a week. At that r
 
 - Bot stat ceilings and names: `calc_run` `bot.statMaxLevel`, `bot.statNames`, `bot.findByName`.
 - Guardian tracks and bounds: `guardian.definitions`, `guardian.statBounds`.
+- Relics an event awards, by event name: `calc_run` `event.relicSet` `{name}`. The set spans every run of that event; a single event awards one edition only, so for the running event read `earnTrack` instead.
 - Vault upgrade costs and values, relic lists, theme catalog: `oracle_get` / `oracle_map`.
 - What the account owns (bots, chips, relics, themes, keys, medals, bits): the save readers (`run_extractor` / `read_save_field`, see `data-access.md`).
 - UW cooldowns for sync targets: `uw.statValue` with stat "Cooldown".

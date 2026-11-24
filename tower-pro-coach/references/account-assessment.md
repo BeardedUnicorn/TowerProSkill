@@ -106,7 +106,7 @@ Fill this in before forming an opinion. If a line can't be filled, it goes under
 | Vault | keys held/earned, nodes unlocked and levelled | Vault |
 | Relics / themes | count unlocked, notable missing ones, themes owned (passive coin bonus) | Relics, Themes, CollectedThemeNames |
 | Perks | bans, first-perk choice, auto-pick order | PerkChoices |
-| Tournaments / events | current and highest league, recent results, event medals, what the event shop sells now | Tournaments, Events, EventShop |
+| Tournaments / events | current and highest league, recent results, event medals, which relics the event awards and at how many medals, what its shop sells | Tournaments, Events, EventShop |
 | Dissonance | which boosts are earned and at what wave, whether Dissonant Runs are being done at all | `calc_run save.readDissonanceBoostWavesByType` (savePath), run `dissonanceType` |
 | Runs | the last 30 runs, in full | battle history |
 | Settings | target priority, range selection, orb distances, life-saving order | RuntimeControls |

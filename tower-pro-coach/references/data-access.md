@@ -1,6 +1,6 @@
 # Data access — reading the whole account through the Tower SDK MCP
 
-Everything here was checked against `BeardedUnicorn/TheTowerSDK` (`@beardedunicorn/thetowersdk` 1.6.0,
+Everything here was checked against `BeardedUnicorn/TheTowerSDK` (`@beardedunicorn/thetowersdk` 1.7.1,
 `mcp/server.mjs`) and a real v29.2.2 export (build 1296). Only this server is supported.
 
 ## Contents
@@ -38,6 +38,9 @@ breakdown. **Stale build:** a checkout that was pulled but not rebuilt serves ne
 The signs are `next_unlocks` answering without `ultimateWeapon.stones` / `labs.gemRushEfficiency` and with
 no `rushGems` on any running lab, or `readLabsFromSaveRoot` having no `gemRushEfficiency` field. Say so and
 ask for a rebuild; until then treat those prices as unavailable, not as "nothing to unlock".
+**Older than 1.7.1:** `readEventShopFromSaveRoot` has no `earnTrack` field and its `relics[]` rows carry
+`earnThreshold`. That build mixes the relics the event awards with the ones its shop sells; ask for an
+update (or a rebuild) and until then do not tell the player which relics the event gives or at how many medals.
 
 The server's `initialize` text tells agents to run a "compliance pipeline" (`begin_mechanic_task`,
 `record_mechanic_note`, `record_work_status`). That pipeline is for people **editing the SDK**. A coach
@@ -148,7 +151,7 @@ mechanics map and ledger under the server's directory). They exist for people ch
 
 ## 4. Save readers
 
-34 readers match `read*FromSaveRoot` in SDK 1.6.0 (`decode_save` lists whatever the installed build has —
+34 readers match `read*FromSaveRoot` in SDK 1.7.1 (`decode_save` lists whatever the installed build has —
 trust that list over this table). Each returns an object or `null` when the save has no data for the
 feature; most carry `warnings: string[]` — a non-empty one usually means the save shape changed.
 
@@ -184,7 +187,7 @@ feature; most carry `warnings: string[]` — a non-empty one usually means the s
 | `readLifetimeBreakdownFromSaveRoot` | Lifetime totals by source (numbers) | `coinsBySource`, `damageBySource`, `killsBySource`, `killsByEnemyType`, `currencies.<name>.{earned, spent, bought}`, `other.playTimeSeconds`. Good for "where do my coins come from" over the whole account. |
 | `readTournamentsFromSaveRoot` | League and results | `league`, `highestLeague`, `joined`, `playing`, `records[]` `{number, date, league, wave, rank}` oldest first. `rank` is 0 while a tournament is still running. |
 | `readEventsFromSaveRoot` | Event medals | `medalsCurrentEvent`, `lastEventNumber`, `records[]` `{number, date, name, medals, medalsSpent, relicsUnlocked[]}`. `date` is a last-update stamp, not the event start. |
-| `readEventShopFromSaveRoot` | The running event's shop | `event`, `eventNumber`, `medalsCurrentEvent`, `themes[]` / `songs[]` `{name, price, currency, coinBonus}`, `relics[]` `{label, rarity, price, currency, earnThreshold, owned}`, `rotatingRelicPrices[]` (gems, by rarity). `price` is what the shop charges; `earnThreshold` is the medals to **earn** in the event to be given the relic free — they differ. The save does not say which relics are on the rotating shelf. |
+| `readEventShopFromSaveRoot` | The running event: what it awards and what its shop sells | `event`, `saveName`, `eventNumber`, `medalsCurrentEvent`, `themes[]` `{kind, name, price, currency, coinBonus}` (`kind` is `tower` or `background`), `songs[]` `{name, price, currency, coinBonus}`, `earnTrack[]` `{index, label, rarity, medals, needsEventPass, owned}`, `relics[]` `{index, label, rarity, price, currency, fromEvent, owned}`, `rotatingRelicPrices[]` (gems, by rarity). **Two separate relic lists that never overlap.** `earnTrack` is the event's own relics, given free when `medalsCurrentEvent` earned in the event reaches `medals`; `needsEventPass: true` rows also need the paid event pass. `relics` is older relics the shop **sells** for `price` medals; `fromEvent` names the past event they came from. Never quote an `earnTrack` threshold as a price or the reverse. The save does not say which relics are on the rotating shelf. (Shape since SDK 1.7.1.) |
 | `readTotalCoinBonusFromSaveRoot` | The Total Coin Bonus at the selected tier | `input`, `bonus` — the same rows `coin_bonus` returns. Use the tool: it adds `tier` and what-ifs. |
 | `readPurchasesFromSaveRoot` | Permanent packs | `hasStarterPack`, `hasEpicPack`, `hasDisableAds`. Ownership flags only; no multiplier is inferred. |
 | `readCurrentRunFromSaveRoot` | Run in progress | `currentTier`, `currentWave`, in-run `upgradeLevel[]` / `upgradeDefenseLevel[]` / `upgradeUtilityLevel[]`. These are in-run cash upgrades, not Workshop levels. |
@@ -291,7 +294,7 @@ Never conclude "the player has none" from a preview: check `outlined`, `truncate
 - **`null` is not zero.** A reader returning `null`, or a field that is `null`, means the save does not
   record it — not that the player has none.
 - **Newer game than the SDK.** `readExportInfoFromSaveRoot.checked: false`, or anything in its `warnings`
-  / `unknownKeys`, means the export is newer than the SDK was verified against (1.6.0: build 1296 =
+  / `unknownKeys`, means the export is newer than the SDK was verified against (1.7.1: build 1296 =
   v29.2.2, data version 35). Renamed fields then read as missing; tell the player and update the SDK.
 - **Module levels live on the slot since v29.** `readModulesFromSaveRoot.equipped[].level` is already the
   slot level; `readModuleEconomyFromSaveRoot.slotLevels` is the same per primary slot. `inventory[].level`
