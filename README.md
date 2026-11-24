@@ -177,6 +177,17 @@ tower-pro-coach/
   evals/                   test prompts for the skill
 ```
 
+## Releasing
+
+The plugin's `version` in `.claude-plugin/marketplace.json` is what Claude Code compares to decide whether
+an installed copy is out of date. **Bump it in every change you want users to receive**; commits pushed
+without a new version string are not picked up. Users then update with:
+
+```bash
+claude plugin marketplace update tower-pro-skill
+claude plugin update tower-pro-coach@tower-pro-skill
+```
+
 ## Running the evals
 
 The cases in `tower-pro-coach/evals/` run with `claude plugin eval`. The runner works in an isolated home
