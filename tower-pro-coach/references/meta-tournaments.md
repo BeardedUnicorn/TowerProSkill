@@ -1,6 +1,6 @@
 # Tournaments: leagues, rewards, builds and v29 changes
 
-Verified against game version: v29.2.1 — 2026-11-20
+Verified against game version: v29.2.2 — 2026-11-20, updated 2026-11-24
 
 Main sources
 - SDK: `compartments/meta-game.ts`, `survival.ts`; `src/data/tournaments/data.ts` (leagues, rewards, heat profiles); `facts/v29.2.0/tournament-prizes.json`, `facts/v29.2.1/tier-battle-conditions.json`.
@@ -72,6 +72,7 @@ Stones (and keys) by rank `[mechanic]`
 | Mythic | 475 (50) | 425 (40) | 400 (37) | 370 (31) | 340 (25) | 325 (20) | 225 (8) |
 
 - "Bottom" is ranks 23–30 up to Gold and 25–30 from Platinum. Gems also rise with league (Copper 10–100, Mythic 335–900). Full tables: `oracle_get`.
+- `[consensus]` towerstats (Nov 2026): in Mythic the first goal is to stay in. Its bottom ranks still pay 225 stones and 8 keys, more than Legend's ranks 16–24.
 - Reading the table: a safe mid-table finish one league up beats a podium below it (Platinum 16–24 pays 50, Gold 5–6 pays 40; Champion 16–24 pays 100, Platinum 5–6 pays 80; Legend 16–24 pays 200 plus a key, Champion 5–6 pays 180). The bottom six from Platinum to Champion pay 20, so yo-yoing between leagues roughly breaks even at best. v29 rebuilt the tables so deliberate demotion does not pay. `[mechanic-derived]`
 
 ## 4. Stones: why tournaments drive progression
@@ -118,6 +119,7 @@ How to decide for one account `[consensus]`: list what is blocked. Blocked by co
 - Mid (Gold–Platinum): hybrid, health to survive plus enough damage to kill bosses arriving every 7–8 waves. Enemy speed and mass scale, so Slow Aura, knockback and Chrono Field gain value.
 - Late (Champion–Legend): damage builds take over; glass cannon with Space Displacer, Energy Shield and Second Wind, or hybrid until the pieces exist. Reference targets from the v28 Legend guide: CL 6–9 quantity and 20–35% chance, SL 3 quantity at 45–55° with ×15–25 bonus, ILM 6–9 quantity at 2:30 cooldown; do not overspend on CL damage; Chrono Field only after attack speed, damage masteries and ILM are in place. `[consensus, v28]`
 - Endgame (Legend–Mythic): CF 90% slow, SL+ (stop at +3 to +5), assists, fleet handling. Fleet waves do not time out since v29, so fleet kill speed is a hard gate.
+- `[unverified, one Legend player: hiro29, 6 Sep 2026]` The post-v29 approach in Legend/Mythic: buy time with crowd control, lower enemy levels with Pulsar Harvester and Amplify Bot+, then finish with raw damage. No second source.
 
 ## 7. Battle conditions and how to adapt
 
@@ -127,7 +129,7 @@ How to decide for one account `[consensus]`: list what is blocked. Blocked by co
 - **Skip Decay** (v27.3, Gold up, fixed by league): enemy level skip chances lose 1% every 80 / 60 / 40 / 20 waves in Gold / Platinum / Champion / Legend.
 - **Skip Reduction – Multiply** (v27.3): ELS chances × 0.9 / 0.75 / 0.6 / 0.45 in Gold / Platinum / Champion / Legend, reduced by the Skip Reduction lab and the general Battle Condition Reduction lab. Mythic's value: look up. `[unverified here]`
 - **Skip Reduction – Subtract** (the old "ELS reduction 10/20/30/50%") is **not** in tournaments since v27.3. The wiki's Tournaments page and some guides still state it.
-- Overheat conditions that can appear in tournaments (v28): More Fleets, More Elites, Damage Decay, Health Decay. Damage and Health Decay were removed from Legend and Mythic in 29.0.2.
+- Overheat conditions that can appear in tournaments (v28): More Fleets, More Elites, Damage Decay, Health Decay. Damage and Health Decay were removed from Legend and Mythic in 29.0.2. towerstats (19 Nov 2026) notes the wiki table still lists them; the patch note is the authority, and the day's Heat panel in game settles it.
 - Legend guide note: UW Durations is a possible condition; Chrono Field duration at the higher breakpoint is described as making it immune. `[consensus, numbers in the guide]`
 - Condition pool (game names): Orb, Death Ray, Thorns, Knockback and Plasma Cannon Resistance; Enemy Speed; Enemy Attack Speed; Armored Enemies; More Enemies; One Enemy Type; Wave Jumps; Mass Enforcement; Ultimate Weapon Durations; the enemy Ultimates (Basic's, Fast's, Tank's, Ranged, Boss's, Protector's, Elite's, Ray's, Scatter's, Vampire's, and the fleet ones). Which are in the random pool per league: check the Heat button; do not assume.
 

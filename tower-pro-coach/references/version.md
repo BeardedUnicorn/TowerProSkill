@@ -1,16 +1,19 @@
 # Version pin and freshness protocol
 
-Verified against game version: **v29.2.1** (patch notes dated 2026-11-19)
-Reference files written: 2026-11-20
+Verified against game version: **v29.2.2** (build 1296; developer note dated 2026-11-21)
+Reference files written: 2026-11-20, updated 2026-11-24
+Verified against SDK: `@beardedunicorn/thetowersdk` **1.6.0**
 
 Main sources
-- SDK knowledge base (`TheTowerSDK`): `facts/v29.0.0`, `facts/v29.2.0`, `facts/v29.2.1`, compartments, and the patch-note archive (259 notes, 2021-07-15 to 2026-11-19, ingested from the official announcement channel).
-- techtreegames.com blog: v29.2 preview (Nov 13), v29.2.1 notes (Nov 19), Tower Tea Oct 26 and Nov 9, 2026.
+- SDK knowledge base (`TheTowerSDK`): `facts/v29.0.0`, `facts/v29.2.0`, `facts/v29.2.1`, `facts/v29.2.2` (286 on-screen readings of the live game, 2026-11-24, and the Milestones screen for tiers 1–15), compartments, and the patch-note archive (259 notes, 2021-07-15 to 2026-11-19, ingested from the official announcement channel). The archive has no entry for 29.2.2.
+- techtreegames.com blog: v29.2 preview (Nov 13), v29.2.1 notes (Nov 19), Tower Tea Oct 26, Nov 9 and Nov 23, 2026.
+- Community strategy re-read 2026-11-24: towerstats.org guides (pages updated 18–19 Nov 2026), tower-hub.com (pages verified Jul–Nov 2026), and one Legend player's notes (hiro29 on note.com, Aug–Sep 2026; single author).
+- Not reachable on 2026-11-24: Fandom wiki pages directly, r/TheTowerGame, the official Discord, YouTube. No first-hand Reddit or Discord text is in these files.
 - Fandom wiki pages re-read by the SDK on 2026-11-18 (Modules, Tournaments, The Vault, Guardian, Currency pages).
 
 ## Contents
 1. What the pin means
-2. v29.0 → v29.2.1 changelog (strategy-relevant only)
+2. v29.0 → v29.2.2 changelog (strategy-relevant only)
 3. Things older guides get wrong after v29
 4. Known upcoming changes (not yet live at the pin)
 5. Freshness protocol
@@ -20,14 +23,14 @@ Main sources
 
 ## 1. What the pin means
 
-Every file in `references/` describes the game **as of v29.2.1**. Tags used across the files:
+Every file in `references/` describes the game **as of v29.2.2**. Tags used across the files:
 - `[mechanic]` – a verifiable game rule, checked against SDK game data or a patch note.
 - `[consensus]` – community strategy or opinion. Usually sourced from guides written for v27–v28; still the best available, but not a rule.
 - `[unverified]` – sources disagree, or the claim could not be confirmed at the pin.
 
 Community strategy lags the game. At the pin, almost no published guide covers v29's slot levels, Mythic league, the Vault rework or the four new modules. Treat `[consensus]` about those areas as thin.
 
-## 2. v29.0 → v29.2.1 changelog (strategy-relevant only)
+## 2. v29.0 → v29.2.2 changelog (strategy-relevant only)
 
 ### v29.0 (notes 2026-08-25, rollout late August)
 - **Presets lab** replaces the Card Preset lab. Level 1 Card presets (350K coins), 2 Workshop (35M), 3 Bot (3.5B), 4 Module (350B), 5 Guardian (35T). Each unlocks two presets; switching is free; a respec still costs gems. `[mechanic]`
@@ -72,6 +75,20 @@ Community strategy lags the game. At the pin, almost no published guide covers v
 - Vault Max Recovery no longer skips its 60% step (values 20/40/60/80/100%). `[mechanic]`
 - 29.2.1: ads fixed for EU; Workshop tutorial soft-lock fixed. No balance change.
 
+### v29.2.2 (build 1296, note dated 2026-11-21)
+- Announced as a fix for delayed tournament rewards. No balance change known. `[mechanic, from the SDK version timeline; the note is not in the patch-note archive]`
+
+### Corrections from reading the live game (SDK 1.3.0–1.6.0, 2026-11-24)
+These are not game changes. They are things earlier SDK data, the wiki or guides had wrong, now checked on screen. `[mechanic]`
+- The Battle tab's **Total Coin Bonus** includes the selected tier's coin bonus and every row multiplies. Read it with `coin_bonus`.
+- Songs and profile banners pay a coin bonus (+0.6% each), like themes.
+- Workshop "Unlock…" buttons are never discounted by the workshop discount labs.
+- The Labs Speed lab speeds up its own research.
+- The gem price on a lab's Rush button is the list price divided by (1 + 0.015 × fully researched labs).
+- Milestone lab unlocks: the wiki listed six labs at milestones the game does not gate them at, and used placeholder names. The gates quoted in these files were re-checked against the corrected table on 2026-11-24 and all match.
+- A card that is maxed leaves the draw pool; six cards cannot be drawn until their milestone is claimed.
+- Still unexplained by the SDK (do not compute these, read them in game): Chain Lightning Quantity, Spotlight Bonus and Knockback Force as displayed.
+
 ## 3. Things older guides get wrong after v29
 
 | Old advice (pre-v29) | True at the pin |
@@ -92,22 +109,27 @@ Community strategy lags the game. At the pin, almost no published guide covers v
 
 ## 4. Known upcoming changes (not live at the pin)
 
-From Tower Tea, 2026-11-09 (developer plans, may slip):
-- **v30 targeted for early December 2026**: pause a Tier run to start a Tournament run; Perk Presets in the Presets lab.
-- **Type-exclusive module banners planned for January 2027**; more featured and Lucky banners later.
+From Tower Tea, 2026-11-09 and 2026-11-23 (developer plans, may slip):
+- **Next major update targeted for "around the beginning of December" 2026** (Nov 9 post): pause a Tier run to start a Tournament run; Perk Presets in the Presets lab. The post calls these "some of the items", so the list is not complete.
+- **A tenth Ultimate Weapon, "The Dome"** (Nov 23 post): a defensive UW, in development and about to enter testing, aimed at "our major update at the end of the year". No unlock method, price or numbers were given, and the post says descriptions and values may change. `[unverified beyond the announcement]`
+- **Type-exclusive module banners planned for January 2027**; more banner types later in 2027.
 - Scatter's Ultimate spawning behaviour is a known issue to be fixed.
 
-If the export shows v30 or later, assume the "cannot join a tournament during a run" rule and the perk advice in these files may be out of date.
+What this means for advice given before the update `[consensus, the coach's own reasoning]`:
+- When a player is about to commit a large stone balance to a UW unlock or a long stat ladder, mention once that a new UW has been announced and that nothing is known about its cost or where it will rank. Do not tell them to hoard stones for it: stones spent on GT/BH/DW sync pay back every day, and an unreleased weapon cannot be valued.
+- How a tenth weapon fits the "all nine owned" rule for UW+ is unknown. Do not guess.
+
+If the export shows v30 or later, assume the "cannot join a tournament during a run" rule, the perk advice, the UW unlock ladder and every "nine UWs" statement in these files may be out of date.
 
 ## 5. Freshness protocol
 
 Run this at the start of every coaching session.
 
-1. Read the game build from the export (`readExportInfoFromSaveRoot` → `versionNumber`; the snapshot's `meta.gameVersion` names it when the SDK knows the build). Compare with the pin, **v29.2.1**.
+1. Read the game build from the export (`readExportInfoFromSaveRoot` → `versionNumber`; the snapshot's `meta.gameVersion` names it when the SDK knows the build). Compare with the pin, **v29.2.2** (build 1296; 1294 is v29.2.1, 1286 is v29.2.0).
 2. **Same version** → use the references as written.
 3. **Export is older** → the player has not updated. Tournaments are version-locked, so tell them to update before the next one. Advice here may describe features they do not have yet.
 4. **Export is newer** → before giving advice in any affected area:
-   1. Call the MCP `patch_notes` tool for every version after v29.2.1. Read the notes themselves; a note that mentions a mechanic is not proof the mechanic changed.
+   1. Call the MCP `patch_notes` tool for every version after v29.2.2 (one question per call). Read the notes themselves; a note that mentions a mechanic is not proof the mechanic changed.
    2. If the archive stops before the export's version, check the official blog (techtreegames.com/blog), which carries patch notes and Tower Tea posts.
    3. For numbers, check the Fandom wiki (the-tower-idle-tower-defense.fandom.com) via `wiki_search` / `wiki_page`. The wiki can lag by weeks; the Tournaments page still showed pre-v27.3 conditions at the pin.
    4. For community reaction to a new patch, r/TheTowerGame and the official Discord. Treat as `[consensus]` at best.
@@ -120,7 +142,7 @@ Run this at the start of every coaching session.
 
 ## 6. How to phrase advice when knowledge may be stale
 
-- State the pin once, plainly: "My strategy notes are pinned to v29.2.1; your save is v30.0. I checked the patch notes for the versions in between."
+- State the pin once, plainly: "My strategy notes are pinned to v29.2.2; your save is v30.0. I checked the patch notes for the versions in between."
 - Separate rule from opinion in the sentence itself: "The game refunds nothing if you reroll (rule). Most strong players wait for Mythic rarity before rerolling seriously (community view, written for v28)."
 - When a system changed after the pin and no guide covers it yet, say so and fall back to mechanics: "No one has published tested advice on this module yet. Here is what it does and how that interacts with your build."
 - Never quote a cost from memory for a newer version. Compute it (`calc_run`) or look it up (`oracle_get`), or tell the player where to read it in game.

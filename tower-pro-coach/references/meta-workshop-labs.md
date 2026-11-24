@@ -1,6 +1,6 @@
 # Meta: Workshop and Labs
 
-Verified against game version: v29.2.1 — written 2026-11-20
+Verified against game version: v29.2.2 — 2026-11-20, updated 2026-11-24
 
 Main sources
 - SDK knowledge base (`TheTowerSDK/src/knowledge/compartments`: workshop, labs, tower, combat, survival, attack, footguns; `LAB_CATALOG`, `LAB_UNLOCKS`, `facts/v29.2.0/workshop-enhancement-caps.json`, `facts/v29.2.1/labs.json`; official patch notes to 2026-11-19). Source of every `[mechanic]`.
@@ -11,7 +11,7 @@ Main sources
 
 Tag legend: `[mechanic]` verifiable rule; `[consensus]` community strategy; `[unverified]` unconfirmed or disputed; `[older]` pre-2026. Stage keys S0–S5 are defined in `account-assessment.md`.
 
-Costs and durations: never quote from a table in this file. Compute with the MCP: `calc_run` ids `lab.coinCost`, `lab.durationDays`, `lab.maxLevel`, `lab.valueAtLevel`, `lab.coinDiscount`, `lab.speedTotal`, `workshop.statDefinitions`, `workshop.enhancementDefinitions`, `workshop.sectionDiscountPct`, `workshop.enhancementDiscountPct` (confirmed present in SDK 1.0.0; always confirm an id with `calc_list` before relying on it). `form_calc lab.research` returns coins and hours for a lab level in one small answer and is the cheapest way to price a lab. No calculator was found that prices base workshop coin levels — say so rather than estimating, and have the player read the price in game. Use `plan_effective_path` for ranked purchases.
+Costs and durations: never quote from a table in this file. Compute with the MCP: `calc_run` ids `lab.coinCost`, `lab.durationDays`, `lab.maxLevel`, `lab.valueAtLevel`, `lab.coinDiscount`, `lab.speedTotal`, `workshop.statDefinitions`, `workshop.enhancementDefinitions`, `workshop.sectionDiscountPct`, `workshop.enhancementDiscountPct` (confirmed present in SDK 1.6.0; always confirm an id with `calc_list` before relying on it). `form_calc lab.research` returns coins and hours for a lab level in one small answer and is the cheapest way to price a lab. No calculator was found that prices base workshop coin levels — say so rather than estimating, and have the player read the price in game. Use `plan_effective_path` for ranked purchases.
 
 ## Contents
 1. How the workshop works (what a coach must know first)
@@ -37,7 +37,7 @@ Costs and durations: never quote from a table in this file. Compute with the MCP
 - `[mechanic]` Workshop maximum is not the stat's cap. Defense % reaches 49.5% from the workshop against a 98% hard cap; Orbs 4 of 14; labs, cards, modules, relics and vault add on top. Thorns is the exception: 99% from the workshop alone.
 - `[mechanic]` Two upgrades improve downward (Shockwave Frequency, Wall Rebuild) and Knockback Force dips at level 30. "More levels = bigger number" is wrong for those three.
 - `[mechanic]` Free upgrades (three separate per-wave chances, up to 49.5% each from workshop, 90.75% with card and perk) level in-run cash stats for free. This is why a build that wants a stat at 0 during a run must also zero the matching free-upgrade chance.
-- `[mechanic]` Section discounts: Workshop Attack/Defense/Utility Discount labs, 99 levels each, to 49.5%.
+- `[mechanic]` Section discounts: Workshop Attack/Defense/Utility Discount labs, 99 levels each, to 49.5%. They discount upgrade levels only. The "Unlock…" buttons that open new workshop rows (the Wall at 500M, Rend Armor at 500B, and so on) are always full price. `next_unlocks` gives the next unlock on each tab, what it opens and its price beside the coin balance.
 - Coaching consequence: workshop advice is always build-relative. Ask (or infer from the save) whether the player farms eHP, devo or hybrid before saying "max X".
 
 ## 2. Workshop priorities by stage
@@ -123,7 +123,7 @@ Rule: enhancements are a late coin sink with a brutal curve. Open them when the 
 - `[mechanic]` Slots: first free at T1 W30; slots 2–5 cost 100 / 400 / 1,400 / 3,000 gems; five is the maximum.
 - `[mechanic]` Stopping a lab refunds the coins in full and keeps accrued progress; resuming charges the full cost again. Switching labs therefore costs slot time, not coins. A coin-starved player can pull coins out of a long lab temporarily.
 - `[mechanic]` Cost and time mostly rise together; three labs are cheap but slow (Chain Lightning Shock, Missile Barrage, Common Drop Chance); none is expensive and fast. 22 labs are one-shot unlocks (Unlock Perks, Workshop Respec, Auto Pick Perks, First Perk Choice, Package After Boss...).
-- `[mechanic]` Labs Coin Discount: 99 levels x 0.3% = 29.7%. Labs Speed: 99 levels to x2.98, plus relic and milestone lab speed. Cell boosts 1.5x–8x (see `meta-economy.md` section 6). Gem rush skips the whole remainder only; gold-boxing (maxing) a lab improves rush efficiency by 0.015x each.
+- `[mechanic]` Labs Coin Discount: 99 levels x 0.3% = 29.7%. Labs Speed: 99 levels to x2.98, plus relic and milestone lab speed. Labs Speed applies to its own research, so its next level takes about half the time a model without that would say at level 54 (239.75 h on screen against 498.68 h). For a running lab quote `activeQueue[].remainingSecondsWithSpeedUp`, which also counts the slot's cell boost. Cell boosts 1.5x–8x (see `meta-economy.md` section 6). Gem rush skips the whole remainder only; gold-boxing (maxing) a lab improves rush efficiency by 0.015x each.
 
 ## 8. Lab priorities by stage
 

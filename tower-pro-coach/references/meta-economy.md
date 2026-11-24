@@ -1,6 +1,6 @@
 # Meta: Economy (coins, cells, gems, perks, Dissonance, farming builds)
 
-Verified against game version: v29.2.1 — written 2026-11-20
+Verified against game version: v29.2.2 — 2026-11-20, updated 2026-11-24
 
 Main sources
 - SDK knowledge base (`TheTowerSDK/src/knowledge/compartments`: economy, perks, dissonance, daily-missions, meta-game, labs, themes; `src/data` tables; official patch-note archive to 2026-11-19). Source of every `[mechanic]`.
@@ -10,6 +10,8 @@ Main sources
 - Not reachable during research: Fandom wiki pages, r/TheTowerGame threads, Discord pins. No first-hand Reddit/Discord text is in this file.
 
 Tag legend: `[mechanic]` = verifiable game rule. `[consensus]` = community strategy/opinion. `[unverified]` = could not confirm or sources disagree. `[older]` = pre-2026 guidance. Stage keys S0–S5 are defined in `account-assessment.md`.
+
+Coin multipliers: `coin_bonus` returns the Battle tab's Total Coin Bonus row by row from the save, at the selected tier or at `tier`, and answers what-ifs through `overrides`. Lab rush prices and the next unlock prices: `next_unlocks`.
 
 Do not quote costs from memory. Use the MCP: `calc_run` with `lab.coinCost`, `lab.durationDays`, `lab.maxLevel`, `lab.speedTotal`, `uw.stoneCost`, `uw.statValue`; `calc_list` to discover ids; `plan_effective_path` (eEcon variants `time` / `coin` / `stone`) for ranked economy purchases.
 
@@ -45,6 +47,8 @@ Decision rule: treat coin income as (kills that happen inside your coin windows)
 Decision rule: farm the tier with the best coins per real hour over a full run on the same build, not the highest tier you can survive. Move up only when the higher tier wins over the whole run, measured over 2–3 runs each.
 
 How to tell:
+- `[mechanic]` `coin_bonus {tier: N}` gives the Total Coin Bonus the account would have on tier N (the tier bonus and that tier's Utility Dissonance boost both change). It is the multiplier side only: a higher tier pays more per kill and ends the run sooner. Use it to say how much further a run must hold up for the move to pay, then confirm with real runs.
+- `[consensus]` "Farming your highest tier" is on towerstats' common-mistakes list (18 Nov 2026). tower-hub's tier guide (29 Jul 2026) adds that T2 beats T1 for unattended coins per wave, and that many Champion-league players still farm T11 for 10,000+ waves; treat the second as an anecdote, not a target.
 - `[consensus]` Compare coins/hour (and cells/hour if cell-starved) from the battle report across tiers; only compare runs with the same build, perks policy and game speed. Change one thing at a time.
 - `[mechanic]` Tier coin bonus is a table, not a formula: T1 x1.0, T2 x1.8, T3 x2.6, T4 x3.4, T5 x4.2, T6 x5.0, T7 x5.8, T8 x6.6, T9 x7.5, T10 x8.7, T11 x10.3, T12 x12.2, T13 x14.7, T14 x17.6, T15 x21.3, T16 x25.2, T17 x29.1, T18 x33, T19 x40, T20 x48, T21 x60, T22 x72, T23 x86, T24 x103. The step between adjacent tiers is roughly 10–25%, so a higher tier only wins if you lose less than that to earlier death, slower kills, or kills outside GT/BH.
 - `[consensus]` Run-length heuristics: income per wave keeps rising deep into a run (spawn rate rises until about wave 6,500 `[older]`), so long runs on a lower tier usually beat short runs on a higher one. 2025 guidance: move up from T2–T10 when you consistently reach about 5,000+ waves with the coin trade-off perk `[older]`. 2026 guidance drops the fixed wave rule in favour of the measured comparison.
@@ -67,6 +71,8 @@ Units trap: `[mechanic]` coins/minute or coins/hour is only meaningful with the 
 
 ## 4. Coin bonus sources and how they stack
 
+`[mechanic]` The Battle tab shows the product of the account-level factors as **Total Coin Bonus**; tapping it lists the rows. `coin_bonus` rebuilds that list from the save: ad bonus, starter pack, epic pack, active cards (Coins card and its mastery), modules (generator), difficulty tier, themes (with songs and profile banners), relics, enhancement, dissonance. The tier's coin bonus is one of the rows, so the total changes with the tier picked. A row at exactly x1 is a lever the account has not pulled. The in-run factors (Golden Tower, Black Hole, Death Wave, Spotlight, Golden Bot, perks) are not in it.
+
 Rule: everything below multiplies. Order purchases by (increase in the factor) / cost, which the eEcon path computes; the table tells the coach what exists and its ceiling.
 
 | Source | Ceiling / shape | Tag |
@@ -86,7 +92,7 @@ Rule: everything below multiplies. Order purchases by (increase in the factor) /
 | Coin trade-off perk | x1.80 coins, -70% max health; Improve Trade-off lab raises the benefit only | `[mechanic]` |
 | Utility Dissonance boost | up to x3 per tier, plus echo | `[mechanic]` |
 | Relics | additive with each other, multiplicative with the rest; owned = active (equipping is cosmetic) | `[mechanic]` |
-| Themes | passive coin % for owning, not equipping (0.4% / 0.8% each `[older]`) | `[mechanic]` |
+| Themes, songs, profile banners | passive coin % for owning, not equipping: tower theme +0.4%, background +0.8%, menu, guardian skin, song and profile banner +0.6% each. The categories add together and apply as one multiplier | `[mechanic]` |
 | Modules | generator/cannon effects and substats add into the stat before multipliers. Named ones: Black Hole Digestor (CPK per free upgrade), Galaxy Compressor (recovery packages cut UW cooldowns), Multiverse Nexus (forces GT/BH/DW to one cooldown), Gilded Sniper (v29 cannon: chance on kill to apply all active coin bonuses even out of range) | `[mechanic]` existence; values via SDK |
 | Guardian | Bounty chip feeds coins; Fetch brings coins/items (fetched coins bypass the ad bonus). Scout is a damage chip | `[mechanic]` |
 | Critical Coin card | chance on basic enemies killed by crits; tiny share of late-run coins | `[mechanic]` |
@@ -110,8 +116,8 @@ Decision rule: cells exist to buy lab time. Spread cheap boosts across every run
 - `[mechanic]` Boosts are 1.5x up to 8x, sold for 1, 8 or 24 hours, and only tick while a lab is slotted. Each lab already boosted adds 20% of base price to the next (all five cost 7x one, not 5x). Cost grows far faster than the multiplier: 1.5x to 2x is 33% more speed for about 6.7x the cells.
 - `[unverified]` Exact prices: sources and the SDK's own table disagree (prices come from remote config). Community figures per lab-hour: 1.5x = 15, 2x = 100, 3x = 840, 4x = 3,360. No calculator prices boosts; tell the player to confirm the price in game.
 - `[consensus]` Policy: 1.5x on all running labs, then 2x on all, and go higher only when cell income refills it. An account banking cells with unboosted labs is time-limited by choice.
-- `[mechanic]` Labs Speed lab: 99 levels to x2.98 (T1 W150). Relics and milestones add lab speed. `[consensus]` Keep it running almost continuously to about level 60; payback lengthens toward 3 years near 99. `[older]` Early accounts may pause it for econ UW labs.
-- `[mechanic]` Gem rush skips the whole remaining time only; longer labs are discounted per unit time (0% at 1 hour to 61% at 360 days). `[consensus]` Rush only long labs, preferably when an event mission rewards research time; never short labs.
+- `[mechanic]` Labs Speed lab: 99 levels to x2.98 (T1 W150). Relics and milestones add lab speed. The lab speeds up its own research: each new level is researched at the speed the previous levels already give. `[consensus]` Keep it running almost continuously to about level 60; payback lengthens toward 3 years near 99. `[older]` Early accounts may pause it for econ UW labs.
+- `[mechanic]` Gem rush skips the whole remaining time only; longer labs are discounted per unit time (0% at 1 hour to 61% at 360 days). The Rush button's price is that list price divided by (1 + 0.015 × labs fully researched), so every lab taken to its cap makes all later rushes cheaper (19 maxed labs = 22% off). Read the live price of each running lab from `next_unlocks` (`labs.running[].rushGems`, with `gemRushEfficiency`); it is the price at the export time and falls as the lab runs. `[consensus]` Rush only long labs, preferably when an event mission rewards research time; never short labs.
 
 ## 7. Gems: what to buy, in what order
 
@@ -188,7 +194,14 @@ Two independent axes `[consensus]`: (a) how you survive: eHP (health/defense/reg
 | S5 | Hybrid or glass cannon; tower-hub: hybrid "is where most accounts end up" | Enemy scaling outpaces eHP | — |
 
 - `[consensus]` Devo generally out-earns blender but needs monitoring; blender is the correct recommendation for players who run unattended.
-- `[consensus]` Orbless prerequisites (towerstats): GT about x16+, Spotlight 3 beams at about 40 degrees and x20+, runs of 7,000+ waves.
+- `[consensus]` The ladder as towerstats states it (farming-builds page, 18 Nov 2026), with the gate for each step:
+  1. eHP / health build, T1–9. Leave it once GT and BH are synced; health scales poorly after about T9.
+  2. Hybrid, to T11 (T12 with a strong Wall).
+  3. Orb Devo once GT and BH are synced: Extra Orb, attack stats at 0, natural sync or Multiverse Nexus.
+  4. SMax Devo (Smart Missiles carry the kills): needs about 5,000+ workshop damage levels and the Missile Amplifier lab.
+  5. Orbless, for runs of 7,000+ waves.
+  These are one site's thresholds. Use them to name the next step and its gate, and check the gate against the account (UW cooldowns for sync, workshop levels, the lab) before recommending a switch.
+- `[consensus]` Orbless prerequisites (towerstats; tower-hub Orbless guide, 1 Nov 2026): GT about x16+, BH Coin Bonus lab maxed, a Black Hole wide enough to cover the tower's range, Spotlight 3 beams at about 40 degrees and x20+, runs of 7,000+ waves. Kills happen only inside the Spotlight beam while GT and BH overlap, so tower-hub says it gains little over Orb/SMax Devo below about 50% GT/BH uptime. Survival comes from an eHP Wall, a permanent BH, or a glass cannon with maxed Chrono Field. Compute the account's GT/BH uptime before suggesting it.
 - `[unverified]` No 2026 written source covers glass-cannon farming or the exact eHP-to-GC timing. Old (v23–24) stone/coin thresholds for GC exist but predate UW+, fleets and tiers 19–24; do not quote them.
 - `[consensus]` Wall: unlocking it early is a recognised mistake (costly labs, wants spare lab slots); it becomes core for hybrid in S3–S4.
 

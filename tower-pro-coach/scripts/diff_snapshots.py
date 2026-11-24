@@ -62,7 +62,7 @@ LABEL_KEYS = ['displayName', 'mappedName', 'name', 'label', 'slug', 'id', 'slotK
 
 # Paths that change constantly or say little; listed after everything else in a section.
 # Clock-driven fields: they change on every export and are never a decision the player made.
-TIMER_NOISE = re.compile(r'remainingSeconds|percentComplete|speedUpRemaining|RemainingSeconds', re.IGNORECASE)
+TIMER_NOISE = re.compile(r'remainingSeconds|percentComplete|speedUpRemaining|RemainingSeconds|rushGems', re.IGNORECASE)
 
 LOW_PRIORITY = re.compile(
     r'preset|skin|theme|autoPick|isNew|rerollCounter|remainingSeconds|percentComplete|'

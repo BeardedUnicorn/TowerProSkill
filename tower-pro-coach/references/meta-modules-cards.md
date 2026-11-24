@@ -1,6 +1,6 @@
 # Modules and cards: mechanics and current meta
 
-Verified against game version: v29.2.1 — 2026-11-20
+Verified against game version: v29.2.2 — 2026-11-20, updated 2026-11-24
 
 Main sources
 - SDK: `compartments/modules.ts`, `cards.ts`, `masteries.ts`; `src/data/modules` (templates, substats, costs, banner rules); patch notes v28.3, v29.0, v29.1.
@@ -97,7 +97,7 @@ Values are Epic / Legendary / Mythic / Ancestral, from the wiki table read 2026-
 | Space Displacer (SD) | 15/20/25/30% of land mines spawn as Inner Land Mines (20 max) | Enables glass cannon (ILM stuns). Needs ILM labs to shine. |
 | Sharp Fortitude (SF) | Wall health and regen ×1.25/1.5/2/2.5; stacking wall-thorn damage | Wall builds. |
 | Orbital Augment (OA) | 2/4/6/8 orbiting Electrons dealing % health damage | Niche. Damage wording differs between SDK and wiki `[unverified]`. |
-| Sentry Protocol (SP, v29) | Orb speed zero; orbs fire 1/2/3/4 mini orbs | New; noted for defense-dissonance runs. Ranking `[unverified]`. |
+| Sentry Protocol (SP, v29) | Orb speed zero; orbs fire 1/2/3/4 mini orbs | New; noted for defense-dissonance runs. One Legend player (hiro29, 6 Sep 2026) rates it strong in tournaments whose heat brings many Ultimate enemies, and still prefers Anti-Cube Portal for farming. Single author; ranking `[unverified]`. |
 
 **Generator**
 | Module | Unique | Role |
@@ -202,7 +202,8 @@ Caps a substat cannot pass `[mechanic]`: Defense % 98, CF slow 90%, wall rebuild
 `[consensus, Evan's Legend guide]`
 - Unlock order: Core (Om Chip beside Dimension Core) → Armor (ACP + SD) → Generator (RB beside PF) → Cannon (AD beside AS).
 - Buy about 10% main efficiency on a slot (≈243 stones) before opening the next; aim near 25% later. Skip quantity substats on assists until the efficiency breakpoint.
-- Assists compete with UW stats, UW+ and masteries for stones. Cost any plan with `calc_run`.
+- Assists compete with UW stats, UW+ and masteries for stones. Cost any plan with `calc_run`. tower-hub (28 Oct 2026) ranks card masteries above assists for most accounts.
+- `[unverified]` Published totals differ because they count different things: tower-hub's 4,600 stones is the slot unlock plus the unique ladder to Ancestral (1,000 + 1,000 + 1,200 + 1,400); towerstats' 28,711 is a whole slot including both efficiency ladders. Do not quote either; sum the steps the player actually plans.
 
 **Primary Module Bonus labs** `[mechanic]` Four labs, 30 levels, +1% per level to the primary module's main effect; they do not affect the assist. SDK records the unlock at Tier 23 Wave 500, so they are Endgame content.
 
@@ -212,7 +213,8 @@ Caps a substat cannot pass `[mechanic]`: Defense % 98, CF slow 90%, wall rebuild
 - 20 gems per card. 32 cards: 12 Common, 9 Rare, 11 Epic. Draw odds 80 / 17 / 3% by rarity; once all commons are maxed the weight shifts to rares.
 - Levels are stars 1–7. 7★ takes 80 copies (1,600 gems at list price). Rarity sets draw odds only, not power: common Damage beats several epics.
 - A card does nothing unless slotted. 22 slots are bought with gems (58,400 total); the Vault adds up to 6 more (28).
-- Milestone-gated cards: Recovery Package Chance (T2 W750), Cells (T4 W40), Land Mine Stun (T7 W250), Nuke (T11 W10), Ultimate Crit (T14 W50), Area of Effect (T20 W80).
+- Milestone-gated cards: Recovery Package Chance (T2 W750), Cells (T4 W40), Land Mine Stun (T7 W250), Nuke (T11 W10), Ultimate Crit (T14 W50), Area of Effect (T20 W80). A gated card cannot be drawn until its milestone reward is **claimed**, and a card at 7★ leaves the pool.
+- `readCardDrawOddsFromSaveRoot` gives this account's real chance per card, as the in-game Card Chances panel shows it (`pool[]` with `drawable` and `gatedBy`, `odds.cards[]`). Read it before recommending gems on cards: it shows whether the cards the build is waiting for can be drawn at all, and at what chance.
 - Cards lock while a boss or fleet is alive; a preset that differs in a locked card cannot be selected mid-run.
 - Energy Shield's value falls with level because it is a recharge time (lower is better).
 
@@ -234,6 +236,7 @@ Slot rule: buy a slot only when a card that would help the current build is wait
 - Push / milestone: drop economy cards for Damage, Attack Speed, Critical Chance, Range, Slow Aura, Plasma Cannon, Energy Net, Super Tower, Ultimate Crit, Berserker, Demon Mode, Energy Shield, Second Wind, Death Ray, Nuke, Land Mine Stun.
 - Tournament: as push; see `meta-tournaments.md` for swaps by league.
 - Health builds keep Health, Health Regen, Extra Defense, Fortress as needed; glass cannon drops them.
+- towerstats' card tier list (Nov 2026) `[consensus]`: top tier for farming is Coins, Wave Accelerator, Wave Skip, Enemy Balance, Critical Coin; top tier for tournaments is Damage, Health, Slow Aura, Second Wind, Demon Mode.
 
 ## 9. Card masteries
 
@@ -248,6 +251,7 @@ Slot rule: buy a slot only when a card that would help the current build is wait
 - First for most accounts: **Recovery Package Chance** (module shards from common module drops).
 - Economy next: Wave Accelerator and Intro Sprint (the GC guide calls T14+ farming without them hard to justify), then Coins, Extra Orb (top econ mastery once the orb adjuster is owned), Wave Skip, Critical Coin. Cells is new and unranked `[unverified]`.
 - Tournament damage line: Super Tower → Damage → Ultimate Crit → Energy Net → Berserker; then Critical Chance, Demon Mode (only with the Vault's Demon Mode automation), Attack Speed, Range (after SL+).
+- towerstats (Nov 2026) names the same economy group (Coins, Wave Skip, Critical Coin, Wave Accelerator) and Damage and Health for tournaments. Its list does not put Recovery Package first; the two sources disagree on the opening pick `[unverified]`.
 - Decide by the account's bottleneck: coins limiting labs → economy masteries; stones limited by tournament rank → damage masteries.
 - Mastery labs are long. Unlocking five masteries at level 0 usually beats pushing one to level 5 early, because level 0 is the largest single step. `[consensus]`
 

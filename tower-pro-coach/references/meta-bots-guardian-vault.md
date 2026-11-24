@@ -1,6 +1,6 @@
 # Bots, medals, Guardian, Vault, relics, themes, guild and daily missions
 
-Verified against game version: v29.2.1 — 2026-11-20
+Verified against game version: v29.2.2 — 2026-11-20, updated 2026-11-24
 
 Main sources
 - SDK: `compartments/bots.ts`, `guardian.ts`, `guild.ts`, `vault.ts`, `themes.ts`, `daily-missions.ts`, `progression.ts` (relics), `meta-game.ts` (events), `footguns.ts`; `facts/v29.2.1/vault-upgrades.json`; `src/data/bots`, `guild`, `themes`.
@@ -44,6 +44,7 @@ Why: medals and bits are calendar-paced, not skill-paced. A weekly or fortnightl
 - The event shop sells bots and bot levels, Bot+ levels, themes, songs, relics, stone and gem packs.
 - A gem-priced relic section (since v28) rotates weekly: two Rare (600 gems) and two Epic (1,200 gems) older event relics.
 - Event-store medal relics return only on event re-runs.
+- `readEventShopFromSaveRoot` lists the running event's shop: themes and songs with their coin bonus, and each relic with two different numbers. `price` is what the shop charges (Rare 200, Epic 500 medals); `earnThreshold` is the medals to **earn** during the event to be given the relic. Quote the right one. Rotating relics are priced in gems and the save does not say which are on the shelf.
 - v29.2 warns when a medal purchase would leave another bot preset in deficit.
 
 **Spending order** `[consensus, wiki Medals Guide]`
@@ -52,6 +53,8 @@ Why: medals and bits are calendar-paced, not skill-paced. A weekly or fortnightl
 3. Stone packs: at most one or two; the price escalates. Many players skip them to fund bots.
 4. Gem packs: only while lab slots are still locked.
 5. Bots (section 3).
+
+towerstats (Oct–Nov 2026) `[consensus]`: medals do not expire, so a balance can wait for a re-run relic; do not spend them on gem, stone or shard packs; on bots, buy Range and Bonus before Cooldown (cooldown interacts with sync, section 3).
 
 Adjustments for the current game `[consensus]`
 - The guide was written with four bots. Bot Bot multiplies other bots, so it is worth little until the others are strong.
@@ -119,6 +122,7 @@ Which first `[consensus, thin]`: Bonus Cells for lab speed if cells are the bott
 `[consensus]`
 - Any active guild that reaches the 750 chest weekly is enough; guild "level" matters less than everyone contributing.
 - Token priority: chips you will equip → season relics (time-limited) → skins and menu themes (+0.6% coins each, permanent) → bits.
+- `[consensus]` Spend tokens before the season ends: towerstats (currencies page, 7 Oct 2026) reports leftovers converting at 5 tokens to 1 gem. Check the season end in game before leaving a balance.
 - Do not hop guilds mid-week; contribution and chest claims are per week.
 
 ## 5. Guardian
@@ -179,7 +183,7 @@ Which first `[consensus, thin]`: Bonus Cells for lab speed if cells are the bott
 - Every **owned** theme pays a permanent coin bonus whether or not it is displayed. Per item: Tower theme +0.4%, Background +0.8%, Menu +0.6%, Guardian skin +0.6%. Milestone tower themes (wave 2500 of each tier) count as tower themes.
 - The categories add together into one coin multiplier.
 - Default themes pay nothing.
-- Songs and profile banners are listed at +0.6% each by the wiki and the SDK bonus catalog, but the SDK coin formula has no term for them. `[unverified]`
+- Songs and profile banners pay +0.6% each. The game's stores print the bonus beside each one and the Themes screen total only matches with them counted (checked on screen, v29.2.2). They are inside the `themes` row of `coin_bonus`.
 
 `[consensus]` Buy the event theme (and song) every event from Early onward. Each is small; a year of them is a large multiplier that never needs upkeep. Background themes pay the most per item.
 
@@ -214,6 +218,7 @@ Which first `[consensus, thin]`: Bonus Cells for lab speed if cells are the bott
 - Power: open the category that matches the bottleneck. Ultimate Damage is the cheapest ladder (125 keys for +25% to all UWs). Coins / Kill in Utility pays back through every later purchase. The 110-key fifth levels are poor value next to first levels elsewhere.
 - Later card slots (40/60/80 keys) and the 50-key toggles are Endgame.
 - Presets from the Vault only add to presets the Presets lab already opened; research the lab first.
+- towerstats' Vault page (19 Nov 2026) names the same openers: the extra card slots (215 keys for all six, and the only way past 22 slots), Auto Restart (20) and Smart Demon Mode / Smart Nuke (25 each).
 - Because the first respec is free and later ones are not confirmed, plan the first 100 keys before spending. Compare options with `oracle_get` on the Vault entries.
 
 Ranks 16–24 in Legend earn one key per tournament, about two a week. At that rate the Vault is slow; say so, and tie Vault plans to the player's realistic rank.

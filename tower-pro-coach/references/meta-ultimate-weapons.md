@@ -1,6 +1,6 @@
 # Meta: Ultimate Weapons (UWs), stones, sync, perma targets, UW+
 
-Verified against game version: v29.2.1 — written 2026-11-20
+Verified against game version: v29.2.2 — 2026-11-20, updated 2026-11-24
 
 Main sources
 - SDK knowledge base (`TheTowerSDK`: compartments ultimate-weapons, uw-plus, build-targets, footguns/permanence, perks, jargon; shipped stone chart `uwStoneChartData`; `LAB_CATALOG`; official patch notes to 2026-11-19). Source of every `[mechanic]` and of all stone totals below.
@@ -13,7 +13,7 @@ Tag legend: `[mechanic]` verifiable rule; `[consensus]` community strategy; `[un
 
 The SDK oracle is explicit: UW pick order, whether a sync target is worth chasing, and every "perma"/quantity target are opinion. Only permanence, stat ranges and stone prices are mechanics. Keep that split when advising.
 
-Stone prices: compute with `calc_run` `uw.stoneCost` — it returns the price of the **single level** passed as `level` (the level being bought), so a multi-level purchase is the sum of one call per level. Also `uw.statValue`, `uw.maxLevel`, `uw.statLevel`. Unlock prices are positional and have no calculator (`uw.stoneCost` returns `null` at level 0).
+Stone prices: compute with `calc_run` `uw.stoneCost` — it returns the price of the **single level** passed as `level` (the level being bought), so a multi-level purchase is the sum of one call per level. Also `uw.statValue` and `uw.maxLevel`. Unlock prices are positional (`uw.stoneCost` returns `null` at level 0): read the account's next weapon and next UW+ unlock price from `next_unlocks` (`ultimateWeapon.stones`, `ultimateWeaponPlus.stones`), which shows them beside the stone balance; `calc_run` `uw.nextUnlockStoneCost` and `uw.nextPlusUnlockStoneCost` give the same numbers.
 
 Exact `weapon` / `stat` strings the calculators accept (the fourth stat is the UW+ ability). A wrong name returns `null` with no error, the same as an unpriced level — if you get `null`, check the name first:
 
@@ -83,16 +83,21 @@ Decision rule: get the three economy UWs (GT, BH, DW) first, in whatever order t
 - First pick `[consensus]`: take GT if offered; otherwise BH or DW; Spotlight is acceptable but weak early. About 88% of first offers contain at least one of GT/DW/BH/SL (tower-hub). Guides say an unlucky first pick is worth considering a restart on a brand-new account; that is opinion, and only relevant in the first days.
 - Farmer order `[consensus]` (tower-hub tier list, Nov 2026): GT, BH, DW, SL, CF, CL, ILM, PS, SM. With strong permanent lab speed, CL fifth and CF sixth or seventh.
 - `[older]` order (v25): GT, BH, DW, SL, CL, CF, SM, PS/ILM; CL before SL if you own Dimension Core.
+- Tournament-first order `[consensus]` (towerstats UW tier list, Nov 2026): GT, DW, BH, CF, CL, SL. It moves DW ahead of BH and brings CF and CL ahead of SL.
+- Last two `[unverified]`: towerstats puts SM before PS; tower-hub puts PS before SM. Neither matters until seven are owned.
+- `[unverified]` A tenth UW, "The Dome" (defensive), was announced on 2026-11-23 for the end-of-year update with no price or numbers. See `version.md` § upcoming before advising a large unlock.
 - Disagreements `[unverified]`: second pick BH vs DW (tower-hub's tier guide ranks DW above BH for the second slot, most others BH first); SM ranked sixth by a generic 2026 blog and last by tower-hub. Poison Swamp, ILM and SM are consistently the last three for farmers.
 - Reasoning to adapt:
   - GT multiplies coins and cash for every kill in its window; nothing else does both. BH's coin lab reaches x11 on kills inside it and BH also controls enemies, which helps survival. DW's coin lab reaches x2.5 and its cell lab x3, and its health bonus helps eHP builds.
   - `[mechanic]` Spotlight Coin Bonus lab unlocks only at T7 W80 (x3 at max), so SL does nothing for coins before that milestone.
-  - CF is the main defensive UW and a tournament staple; CL is the strongest sustained damage UW and scales with tournament play (Dimension Core). No 2026 source gives a separate tournament-first unlock order; tournament-focused accounts move CL and CF ahead of SL.
+  - CF is the main defensive UW and a tournament staple; CL is the strongest sustained damage UW and scales with tournament play (Dimension Core). Tournament-focused accounts move CL and CF ahead of SL (order above).
 - Offers are random, so the practical rule is: among the three shown, take the highest on the list above; if none of GT/BH/DW is shown while missing, take the best remaining rather than waiting (you cannot reroll).
 
 ## 4. Stone spending priorities by stage
 
 Rule: unlock before upgrading until GT, BH and DW are owned; then buy sync; then duration/bonus on the coin UWs; damage UWs last. At every step compute the candidate costs with `uw.stoneCost` and compare against the next unlock price.
+
+Stopping points per UW `[consensus]` (towerstats UW tier list, Nov 2026; one site's targets, price each with `uw.stoneCost` before quoting): GT Bonus to about x14.6, then Duration to 30s · BH Size to 50m, then Duration to 30s · DW to 3 effect waves · SL Bonus to about x29, then a second beam · CF Cooldown to 60s · CL Quantity to 5, then Chance to 27.5%. `[unverified]` The Spotlight order is disputed: older guides want three beams and angle before Bonus (S3 below).
 
 ### S0–S1 (0–2 UWs)
 - `[consensus]` Save for unlocks. After the first UW a small spend (about 50–150 stones `[older]`) on GT Bonus/Duration or BH Size/Duration is fine while saving for the next unlock. Cheap early levels cost 5–40 stones each `[mechanic]`.
@@ -144,7 +149,7 @@ Common sync shapes (BH : GT : DW), total stones from untouched cooldowns `[mecha
   - Resolution for the coach: both are arithmetic. If the plan is 1:1:1, leave BH at 200 and spend 1,710. If the plan is an integer ratio, 230 stones gets a working sync immediately and every later step must lower GT and DW by twice what BH drops. State the chosen target, compute the full path, and check current cooldowns in the save before recommending any cooldown level; an account that already has off-ratio cooldowns needs the cheapest path to the nearest ratio, not the textbook one.
 - Buying cooldown `[consensus]`: buy all levels needed for the next ratio at once (save up), not one at a time, so the account is never sitting off-sync.
 - GT duration vs BH duration `[consensus]`: keep GT duration at least BH duration (older guides: BH + 12s to cover the BH duration perk) so GT is active for the whole BH hold.
-- Multiverse Nexus (MVN, core module) `[consensus]`: forces GT, BH and DW to share one cooldown (their average, plus an offset that improves with rarity: positive seconds at Epic/Legendary, about zero at Mythic, negative at Ancestral `[older]` figures +20/+10/+1/-10s; re-derive from module data before quoting). It is a way to be synced without buying cooldowns, called "training wheels" by the wiki; tower-hub estimates it becomes a small loss at the very end game. It occupies the core slot, which damage builds want for Dimension Core.
+- Multiverse Nexus (MVN, core module) `[consensus]`: forces GT, BH and DW to share one cooldown (their average, plus an offset that improves with rarity: positive seconds at Epic/Legendary, about zero at Mythic, negative at Ancestral `[older]` figures +20/+10/+1/-10s; re-derive from module data before quoting). It is a way to be synced without buying cooldowns, called "training wheels" by the wiki; tower-hub estimates it becomes a small loss at the very end game. It occupies the core slot, which damage builds want for Dimension Core. tower-hub's footguns page (29 Jul 2026) treats it as a stopgap: it adds seconds to the averaged cooldown below Mythic, so the goal remains a natural sync of 3:20 (200s) or better bought with stones.
 - Galaxy Compressor (generator module) `[consensus]`: each recovery package collected cuts UW cooldowns (10–20s by rarity; not Poison Swamp). It makes cooldowns variable, which is how GT and BH reach permanent uptime late; `[mechanic]` v28.3.x made DW effect waves behave consistently with it.
 - Bots `[mechanic]`: bot cooldown labs are permanent. Decide Golden Bot's target cooldown from the UW cycle (for example 100s or 120s against a 200s or 240s cycle) before researching.
 - Cost of being unsynced `[consensus]`: tower-hub estimates most coin income depends on GT and BH being active together; treat exact percentages as illustrative. The battle-report check is in `account-assessment.md`.
@@ -218,7 +223,7 @@ Always compute: current duration (stones + lab + perk + substats) vs current coo
 | ILM+ | Charged Mines | Mine damage charges per second until detonation | 18,570 |
 
 - `[mechanic]` Golden Combo scales with kills during the GT window (density, kill speed, GT duration), not with GT Bonus; payout lands when the window ends.
-- When to unlock `[consensus]`: only after all nine UWs, a working sync and decent GT uptime. Order for farmers: GT+ first, then CF+ for control; Legend-tournament guidance: GT+, CF+, then SL+ once Spotlight coverage is wide. No fuller community ranking was found `[unverified]`.
+- When to unlock `[consensus]`: only after all nine UWs, a working sync and decent GT uptime. Order for farmers: GT+ first, then CF+ for control; Legend-tournament guidance: GT+, CF+, then SL+ once Spotlight coverage is wide. towerstats and tower-hub (Nov 2026) put Chrono Loop (CF+) or Smite (CL+) first for an account whose goal is tournament rank. tower-hub logged Golden Combo at 46% of coins on one Legend account; that is one account, not a rate to promise. No fuller community ranking was found `[unverified]`.
 - Cost discipline: the first UW+ unlock is 500 but its levels start at 300–400 each; compare each level with base-stat purchases using `uw.stoneCost`.
 
 ## 10. How labs, perks, modules and cards touch UWs

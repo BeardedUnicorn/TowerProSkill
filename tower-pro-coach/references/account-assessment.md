@@ -1,6 +1,6 @@
 # Account assessment: from raw export to diagnosis
 
-Verified against game version: v29.2.1 — written 2026-11-20
+Verified against game version: v29.2.2 — 2026-11-20, updated 2026-11-24
 
 This file is the method, not the playbook: how to turn what the readers return into (1) a stage, (2) a
 dominant bottleneck, and (3) a short ranked list of moves. The stage thresholds are `[consensus]`
@@ -94,17 +94,19 @@ Fill this in before forming an opinion. If a line can't be filled, it goes under
 | Identity | game build/version, export time, account age | ExportInfo, Lifetime |
 | Progress | best wave per tier, highest tier, milestones claimed | TierRecords, Milestones, EffectivePathsSettings |
 | Currencies | coins, gems, stones, medals, cells, keys, bits/tokens, shards by type, reroll shards | Currencies, Modules, Vault |
+| What each balance can open | next workshop unlock per tab (coins), next UW and UW+ (stones), Rush price of each running lab (gems), and whether the balance covers it | `next_unlocks` |
+| Coin multiplier | Total Coin Bonus rows at the farming tier; which rows sit at x1; the same at a candidate tier | `coin_bonus` (and `coin_bonus {tier}`) |
 | Workshop | levels vs caps for attack/defense/utility, enhancements, which presets exist and what they are for | Workshop, WorkshopUnlocks, GlobalPresets |
 | Labs | slots unlocked, **what is running in each and time left, any empty slot**, levels of the high-value labs, lab speed, total researched/maxed | Labs |
 | Ultimate weapons | which are owned, each stat level, cooldown and duration per UW, UW+ unlocked/levels | UltimateWeapons |
-| Cards | slots unlocked, card levels, equipped set per preset, masteries | Cards |
+| Cards | slots unlocked, card levels, equipped set per preset, masteries, what the next card purchase can draw | Cards, CardDrawOdds |
 | Modules | equipped per slot with rarity and substats, slot levels, inventory worth merging, assist slots, pity counters, bans | Modules, ModuleEconomy |
 | Bots | owned, levels, cooldowns (medals vs labs), Bot+, synchronicity | Bots, BotSynchronicity |
 | Guardian | unlocked, in a guild or not, chips and levels, equipped | Guardians |
 | Vault | keys held/earned, nodes unlocked and levelled | Vault |
 | Relics / themes | count unlocked, notable missing ones, themes owned (passive coin bonus) | Relics, Themes, CollectedThemeNames |
 | Perks | bans, first-perk choice, auto-pick order | PerkChoices |
-| Tournaments / events | current and highest league, recent results, event medals | Tournaments, Events |
+| Tournaments / events | current and highest league, recent results, event medals, what the event shop sells now | Tournaments, Events, EventShop |
 | Dissonance | which boosts are earned and at what wave, whether Dissonant Runs are being done at all | `calc_run save.readDissonanceBoostWavesByType` (savePath), run `dissonanceType` |
 | Runs | the last 30 runs, in full | battle history |
 | Settings | target priority, range selection, orb distances, life-saving order | RuntimeControls |
@@ -125,6 +127,8 @@ mixing them makes every median meaningless. Then, per group and per tier:
 - **Tier comparison**: if runs exist on more than one tier, compare median coins/hour and cells/hour
   across them. That comparison — not the highest wave — decides the farming tier. If only one tier
   appears, say that the comparison can't be made and suggest a test run one tier up or down.
+  `coin_bonus {tier}` tells you the multiplier a neighbouring tier would give before the test run: use
+  it to say how much shorter the run may get and still come out ahead.
 - **How runs end**: tabulate `killedBy` and the death wave. A consistent killer at a consistent wave is a
   wall you can name and address; scattered causes suggest a build that simply runs out of scaling.
 - **Uptime**: the share of the clock the tower is actually in a run. Sum real run time over the window the

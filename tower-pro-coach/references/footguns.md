@@ -1,6 +1,6 @@
 # Footguns: irreversible decisions and classic traps
 
-Verified against game version: v29.2.1 — 2026-11-20
+Verified against game version: v29.2.2 — 2026-11-20, updated 2026-11-24
 
 Main sources
 - SDK: `compartments/footguns.ts` (permanence rules kept apart from opinion), `modules.ts`, `bots.ts`, `vault.ts`, `guardian.ts`, `masteries.ts`; `facts/v29.2.1/vault-upgrades.json`.
@@ -152,7 +152,7 @@ All `[consensus]`. Each entry: what, why it hurts, how to word it.
 - Sandbagging for rewards; buying Intro Sprint for tournaments; planning runs around long Demon Mode / Second Wind chains. See `meta-tournaments.md`.
 
 ### B11. Leaving farm on autopilot
-- What: farming the highest tier reachable instead of the best coins per hour; no Auto Restart or presets when available; ignoring daily missions and the guild box.
+- What: farming the highest tier reachable instead of the best coins per hour; no Auto Restart or presets when available; ignoring daily missions and the guild box; letting guild tokens sit past the season end; leaving a row of the Total Coin Bonus at x1 that is cheap to raise (`coin_bonus` shows the rows).
 - Not irreversible, but it compounds. Raise it as an efficiency note, not a warning.
 
 ## 5. Warning templates
@@ -166,7 +166,7 @@ Match tone to permanence.
 - **Already done** — no blame, state the way out:
   "That is locked in. It is recoverable: [GT catching up / the Vault slider / owning all nine UWs]. Here is the cheapest route."
 - **Uncertain or newer than the pin** — say so:
-  "My notes are from v29.2.1 and I could not confirm this for your version. Please check the in-game description before spending."
+  "My notes are from v29.2.2 and I could not confirm this for your version. Please check the in-game description before spending."
 
 Do not stack warnings. One footgun per recommendation, the one that applies. Never invent a number in a warning; compute it (`calc_run`) or leave it out.
 
@@ -176,4 +176,4 @@ Do not stack warnings. One footgun per recommendation, the one that applies. Nev
 2. Does it change any cooldown (UW stat, core substat, bot, Summon chip)? → compute the resulting pair with `uw.statValue` and state the sync before and after.
 3. Is the source respeccable (section 3)? → say so; a respeccable choice needs no warning.
 4. Is the claim opinion (List B)? → attribute it and explain why.
-5. Is the export newer than v29.2.1? → follow `version.md` before asserting permanence rules that a patch may have changed.
+5. Is the export newer than v29.2.2? → follow `version.md` before asserting permanence rules that a patch may have changed.

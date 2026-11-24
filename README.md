@@ -53,11 +53,20 @@ distinction in its advice.
 
 ### 1. Install the TheTowerSDK MCP server
 
+Version 1.5.0 or later is needed for unlock pricing and the coin-bonus breakdown.
+
+**Claude desktop app:** download `thetowersdk.mcpb` from the SDK's
+[latest release](https://github.com/BeardedUnicorn/TheTowerSDK/releases/latest) and open it. Nothing to build.
+
+**From source:**
+
 ```bash
 git clone https://github.com/BeardedUnicorn/TheTowerSDK.git
 ```
 
-Install and build it following that repository's README, then register the server with Claude. For Claude
+Install and build it following that repository's README, then register the server with Claude. The server
+runs from the built `dist/` folder, so rebuild after every `git pull` and restart Claude — a checkout that
+was pulled but not rebuilt answers with old data. For Claude
 Code, copy `.mcp.json.example` to `.mcp.json` in your project (or add the entry to your user config), using your own path:
 
 ```json
@@ -102,6 +111,9 @@ Where the file ends up:
 | Mac (iPad app) | `~/Library/Containers/<app container>/Data/Documents/tool_export.json` |
 | iPhone / iPad | In the app's documents; copy it to the computer running Claude (Files, AirDrop) |
 
+On a Mac the server finds the file by itself. Elsewhere, give the coach the path, or set the
+`TOWER_TOOL_EXPORT` environment variable for the MCP server to the file's path.
+
 The file has to be readable on the machine where Claude and the MCP server run. Only the official
 `tool_export.json` is supported — the skill never touches the game's encrypted save.
 
@@ -140,6 +152,37 @@ tower-pro-coach/
   scripts/diff_snapshots.py  compare two snapshots
   evals/                   test prompts for the skill
 ```
+
+## Running the evals
+
+The cases in `tower-pro-coach/evals/` run with `claude plugin eval`. The runner works in an isolated home
+folder with no MCP servers of its own, so give the skill folder a server for the run: create
+`tower-pro-coach/.mcp.json` (ignored by git) with the same `thetowersdk` entry as above, plus the export's
+location, because the isolated home hides the game's folder:
+
+```json
+{
+  "mcpServers": {
+    "thetowersdk": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["/absolute/path/to/TheTowerSDK/mcp/server.mjs"],
+      "env": { "TOWER_TOOL_EXPORT": "/absolute/path/to/tool_export.json" }
+    }
+  }
+}
+```
+
+Then run one case at a time (`--case` takes a single name or glob):
+
+```bash
+claude plugin eval tower-pro-coach --case full-account-review --mocks off --ablation none --allow-tools Bash Write Edit mcp__plugin_tower-pro-coach_thetowersdk
+```
+
+`--mocks off` starts the real server as you, outside the sandbox. Run `refuses-without-sdk-server` with
+the `.mcp.json` removed and without `--mocks off`: that case checks what the coach does when the server
+is missing. Results and reports contain account data; they are written under `evals/results/`, which is
+ignored by git.
 
 ## Game version
 
