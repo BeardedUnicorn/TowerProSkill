@@ -1,6 +1,6 @@
 # Meta: Economy (coins, cells, gems, perks, Dissonance, farming builds)
 
-Verified against game version: v29.2.2 — 2026-11-20, updated 2026-11-24
+Verified against game version: v29.2.3 — 2026-11-20, updated 2026-11-25
 
 Main sources
 - SDK knowledge base (`TheTowerSDK/src/knowledge/compartments`: economy, perks, dissonance, daily-missions, meta-game, labs, themes; `src/data` tables; official patch-note archive to 2026-11-19). Source of every `[mechanic]`.

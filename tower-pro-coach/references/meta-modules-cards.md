@@ -1,6 +1,6 @@
 # Modules and cards: mechanics and current meta
 
-Verified against game version: v29.2.2 — 2026-11-20, updated 2026-11-24
+Verified against game version: v29.2.3 — 2026-11-20, updated 2026-11-25
 
 Main sources
 - SDK: `compartments/modules.ts`, `cards.ts`, `masteries.ts`; `src/data/modules` (templates, substats, costs, banner rules); patch notes v28.3, v29.0, v29.1.

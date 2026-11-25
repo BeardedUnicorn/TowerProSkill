@@ -1,6 +1,6 @@
 # Bots, medals, Guardian, Vault, relics, themes, guild and daily missions
 
-Verified against game version: v29.2.2 — 2026-11-20, updated 2026-11-24
+Verified against game version: v29.2.3 — 2026-11-20, updated 2026-11-25
 
 Main sources
 - SDK: `compartments/bots.ts`, `guardian.ts`, `guild.ts`, `vault.ts`, `themes.ts`, `daily-missions.ts`, `progression.ts` (relics), `meta-game.ts` (events), `footguns.ts`; `facts/v29.2.1/vault-upgrades.json`; `src/data/bots`, `guild`, `themes`.
@@ -71,7 +71,7 @@ Adjustments for the current game `[consensus]`
 | Flame Bot | Damage Reduction, Cooldown, Damage, Range | Burns; the only bot with Damage Reduction. Fixed 3 s duration, base cooldown 75 s. |
 | Bot Bot (v28) | Duration, Cooldown, Bonus, Range | Amplifies the other bots' effects inside its radius. |
 
-- Bought and levelled with medals. Unlock price depends on how many bots you already own (positional ladder; look up with `oracle_get`).
+- Bought and levelled with medals. Unlock price depends on how many bots you already own (positional ladder in the SDK table `BOT_BASE_UNLOCK_COSTS`, read by `calc_run data.getBotUnlockCost {args: {unlockedBotCount}}`; confirm one price on screen before quoting, since that calculator is generated, not curated). Level costs and stat ladders per bot: `BOT_UPGRADES_DATA` or `form_calc bot.upgrade`.
 - Level cost: 100 medals for the first level of a stat, +40 for each level after. Each stat has its own maximum: Cooldown 15 on every bot; Duration and Bonus 30 on Golden and Amplify; Range 15–20 by bot; Bot Bot Bonus 19; Flame Bot Damage 30. Never assume one "bot level".
 - Tower range amplifies bot range. Relics and the Vault add more.
 - Bots can be switched off individually.
@@ -107,7 +107,7 @@ Adjustments for the current game `[consensus]`
 
 Which first `[consensus, thin]`: Bonus Cells for lab speed if cells are the bottleneck and Golden Bot range covers the kill zone; Echoing Shot for damage-limited tournament players. No tested v29 ranking was found. `[unverified]`
 
-**Synchronicity** `[mechanic]` Unlocked for stones (1,500) after all five Bot+ abilities are owned. Gives two slots for bots that then share a path; each further slot costs 1,500 stones. It is an Endgame stone sink; weigh it against UW+ and assists with `calc_run`.
+**Synchronicity** `[mechanic]` Unlocked for stones (1,500) after all five Bot+ abilities are owned. Gives two slots for bots that then share a path; each further slot costs 1,500 stones. It is an Endgame stone sink; weigh it against UW+ and assists with `calc_run`. `readBotSynchronicityFromSaveRoot.occupiedSlots` below `slotCount` means a paid slot is empty — filling it is free.
 
 ## 4. Guild basics
 
@@ -164,7 +164,8 @@ Which first `[consensus, thin]`: Bonus Cells for lab speed if cells are the bott
 ## 7. Relics
 
 `[mechanic]`
-- A relic is a permanent account-wide bonus once **unlocked** (claimed). Equipping or displaying a relic does nothing to stats. A relic still in the mail pays nothing.
+- A relic is a permanent account-wide bonus once **unlocked** (claimed). Equipping or displaying a relic does nothing to stats. A relic still in the mail pays nothing. In the save reader a mailed relic still reads `unlocked: true` and is counted in `unlockedCount`; only `state: "unlocked"` pays, and `mailedCount` > 0 means relics are waiting to be claimed (a free fix to point out).
+- What the account's relics add, per stat: unlocked indices → `calc_run workshop.relicBenefitByStat` (recipe in `data-access.md` § "Tables and calculators worth knowing"). Use that figure, not published community totals.
 - **Stacking: relics of the same stat add together; the total multiplies with every other source.** Ten 2% damage relics are +20%, not ×1.219.
 - 27 possible relic stats, including Lab Speed, Coin Bonus, Damage, Health, Defense %, Ultimate Damage, Enemy Attack/Health Skip, free upgrades and Bot Range (metres, additive).
 - Relics count toward hard caps (Defense % 98).
@@ -175,7 +176,8 @@ Which first `[consensus, thin]`: Bonus Cells for lab speed if cells are the bott
 - Value order: **Lab Speed** (compounds over the whole account) → **Coin Bonus** → the stat your build is short of. Because same-stat relics add, each new one is worth less in relative terms as the pile grows; a first relic in a new stat can beat a tenth in an old one.
 - Never skip a time-limited lab-speed or coin relic for a bot level.
 - Gem relics (600 / 1,200) compete with modules and cards. Mid-game and later, a lab-speed or coin relic is usually worth it; cosmetic-stat relics are not.
-- Published community totals for relic bonuses disagree with the game's own relic list; use the save readers (`run_extractor` / `read_save_field`, see `data-access.md`) for what an account really has.
+- Published community totals for relic bonuses disagree with the game's own relic list; use the save readers and `workshop.relicBenefitByStat` (see `data-access.md`) for what an account really has.
+- Is an event pass worth it for its relics? Read the event's four relics from `EVENT_RELIC_SETS` (stat and benefit per relic; the pass rows have `needsEventPass: true`) and weigh them with the rules above. Each relic there also carries a later shop price in medals and a Rotating Relics price in gems; both shelves rotate, so a missed relic can be bought later, but not on demand.
 
 ## 8. Themes, skins and songs
 
@@ -219,7 +221,7 @@ Which first `[consensus, thin]`: Bonus Cells for lab speed if cells are the bott
 - Later card slots (40/60/80 keys) and the 50-key toggles are Endgame.
 - Presets from the Vault only add to presets the Presets lab already opened; research the lab first.
 - towerstats' Vault page (19 Nov 2026) names the same openers: the extra card slots (215 keys for all six, and the only way past 22 slots), Auto Restart (20) and Smart Demon Mode / Smart Nuke (25 each).
-- Because the first respec is free and later ones are not confirmed, plan the first 100 keys before spending. Compare options with `oracle_get` on the Vault entries.
+- Because the first respec is free and later ones are not confirmed, plan the first 100 keys before spending. Compare options with the SDK tables `VAULT_V29_POWER`, `VAULT_V29_HARMONY` and `VAULT_V29_ENEMY` (category unlock costs, then per-level keys and values); the oracle has no Vault numbers.
 
 Ranks 16–24 in Legend earn one key per tournament, about two a week. At that rate the Vault is slow; say so, and tie Vault plans to the player's realistic rank.
 
@@ -228,7 +230,7 @@ Ranks 16–24 in Legend earn one key per tournament, about two a week. At that r
 - Bot stat ceilings and names: `calc_run` `bot.statMaxLevel`, `bot.statNames`, `bot.findByName`.
 - Guardian tracks and bounds: `guardian.definitions`, `guardian.statBounds`.
 - Relics an event awards, by event name: `calc_run` `event.relicSet` `{name}`. The set spans every run of that event; a single event awards one edition only, so for the running event read `earnTrack` instead.
-- Vault upgrade costs and values, relic lists, theme catalog: `oracle_get` / `oracle_map`.
+- Vault upgrade costs and values: `VAULT_V29_POWER` / `VAULT_V29_HARMONY` / `VAULT_V29_ENEMY` via `find_rows`. Relic catalog: `RELIC_GAME_TABLE`; relics per event with stat, benefit, medal threshold, pass flag and later shop prices: `EVENT_RELIC_SETS`. Theme catalog: `THEME_CATALOG`.
 - What the account owns (bots, chips, relics, themes, keys, medals, bits): the save readers (`run_extractor` / `read_save_field`, see `data-access.md`).
 - UW cooldowns for sync targets: `uw.statValue` with stat "Cooldown".
 - Irreversibility check before any cooldown advice: `oracle_footguns`.

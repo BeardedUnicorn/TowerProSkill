@@ -1,6 +1,6 @@
 # Glossary: community shorthand and jargon
 
-Verified against game version: v29.2.2 — 2026-11-20, updated 2026-11-24
+Verified against game version: v29.2.3 — 2026-11-20, updated 2026-11-25
 
 Main sources
 - SDK compartments `jargon.ts`, `naming.ts`, `build-targets.ts`, `masteries.ts`, `uw-plus.ts`; `src/data/glossary`; module templates (initials).
@@ -217,7 +217,7 @@ Perks
 - `wall` – the Wall defensive structure (Fortress card, wall health/rebuild, wall thorns); "wall build" relies on it. "Thorbs" = wall thorns + boss orbs.
 - `orbless` – a build that does not use orbs; kills happen in the Spotlight beam while GT and BH overlap.
 - `SMax devo` / `SMAX` – a devo farm whose kills come from Smart Missiles (Missile Amplifier lab).
-- `The Dome` – a tenth, defensive Ultimate Weapon announced 2026-11-23 for the end-of-year update. Not in the game at v29.2.2.
+- `The Dome` – a tenth, defensive Ultimate Weapon announced 2026-11-23 for the end-of-year update. Not in the game at v29.2.3.
 - `Total Coin Bonus` – the Battle tab's product of the account's coin multipliers, tier bonus included; the `coin_bonus` tool lists its rows.
 - `perma BH` / `pBH` – Black Hole always up. `pBHGT`, `pCF` likewise.
 - `farm` / `farming` – repeatable runs for coins and cells. `push` / `milestone run` – a run for maximum wave. `tourney` – tournament.

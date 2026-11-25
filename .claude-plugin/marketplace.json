@@ -10,7 +10,7 @@
     {
       "name": "tower-pro-coach",
       "displayName": "Tower Pro Coach",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "description": "Coaches your account in The Tower – Idle Tower Defense: reads your tool_export.json through the TheTowerSDK MCP server and ranks the highest-value next steps with real costs. Requires the TheTowerSDK MCP server.",
       "source": "./",
       "strict": false,

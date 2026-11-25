@@ -1,6 +1,6 @@
 # Account assessment: from raw export to diagnosis
 
-Verified against game version: v29.2.2 — 2026-11-20, updated 2026-11-24
+Verified against game version: v29.2.3 — 2026-11-20, updated 2026-11-25
 
 This file is the method, not the playbook: how to turn what the readers return into (1) a stage, (2) a
 dominant bottleneck, and (3) a short ranked list of moves. The stage thresholds are `[consensus]`
@@ -97,17 +97,17 @@ Fill this in before forming an opinion. If a line can't be filled, it goes under
 | What each balance can open | next workshop unlock per tab (coins), next UW and UW+ (stones), Rush price of each running lab (gems), and whether the balance covers it | `next_unlocks` |
 | Coin multiplier | Total Coin Bonus rows at the farming tier; which rows sit at x1; the same at a candidate tier | `coin_bonus` (and `coin_bonus {tier}`) |
 | Workshop | levels vs caps for attack/defense/utility, enhancements, which presets exist and what they are for | Workshop, WorkshopUnlocks, GlobalPresets |
-| Labs | slots unlocked, **what is running in each and time left, any empty slot**, levels of the high-value labs, lab speed, total researched/maxed | Labs |
+| Labs | slots owned (`labsUnlocked` + 1), **what is running in each and time left, any empty slot**, levels of the high-value labs, lab speed (lab level, relic `LabSpeed` total, Vault), total researched/maxed | Labs, `workshop.relicBenefitByStat` |
 | Ultimate weapons | which are owned, each stat level, cooldown and duration per UW, UW+ unlocked/levels | UltimateWeapons |
 | Cards | slots unlocked, card levels, equipped set per preset, masteries, what the next card purchase can draw | Cards, CardDrawOdds |
-| Modules | equipped per slot with rarity and substats, slot levels, inventory worth merging, assist slots, pity counters, bans | Modules, ModuleEconomy |
-| Bots | owned, levels, cooldowns (medals vs labs), Bot+, synchronicity | Bots, BotSynchronicity |
+| Modules | equipped per slot with rarity and substats, rerolls already spent on each, slot levels, inventory worth merging, assist slots and the unique-effect rarity they run at, pity counters, bans and auto-reroll keeps | Modules, ModuleEconomy |
+| Bots | owned, levels, cooldowns (medals vs labs), Bot+, synchronicity (any empty or locked sync slot) | Bots, BotSynchronicity |
 | Guardian | unlocked, in a guild or not, chips and levels, equipped | Guardians |
 | Vault | keys held/earned, nodes unlocked and levelled | Vault |
-| Relics / themes | count unlocked, notable missing ones, themes owned (passive coin bonus) | Relics, Themes, CollectedThemeNames |
+| Relics / themes | count claimed (`state: "unlocked"`; `unlockedCount` includes mailed ones), relics waiting in the mail (`mailedCount`), total per stat, notable missing ones, themes owned (passive coin bonus) | Relics (`workshop.relicBenefitByStat` for totals), Themes, CollectedThemeNames |
 | Perks | bans, first-perk choice, auto-pick order | PerkChoices |
 | Tournaments / events | current and highest league, recent results, event medals, which relics the event awards and at how many medals, what its shop sells | Tournaments, Events, EventShop |
-| Dissonance | which boosts are earned and at what wave, whether Dissonant Runs are being done at all | `calc_run save.readDissonanceBoostWavesByType` (savePath), run `dissonanceType` |
+| Dissonance | which boosts are earned and at what wave, the multiplier each gives (`form_calc dissonance.boost` with the per-tier bests), whether Dissonant Runs are being done at all | `calc_run save.readDissonanceBoostWavesByType` (savePath), run `dissonanceType` |
 | Runs | the last 30 runs, in full | battle history |
 | Settings | target priority, range selection, orb distances, life-saving order | RuntimeControls |
 
@@ -159,10 +159,12 @@ Pick the one that best fits; it becomes the report's headline.
 | **Damage-limited** | Bosses or fleets leak, runs end by being overrun late rather than burst down; tournament placement stalls while farming is fine; kill mix leans on a source that stops scaling (orbs at T14+) | Damage labs, attack workshop/enhancements, damage UWs and their sync, cannon module, tournament preset. |
 | **Time/lab-limited** | Coins pile up unspent, workshop near caps, every useful lab is days-to-weeks long; or slots sit idle / run cheap filler | Lab speed, slot count, queue discipline, cells for speed-ups on the long chains; choose labs by value per day, not per coin. |
 | **Stone-limited** | Clear UW targets exist but stone income (league results) can't fund them | Tournament performance is the lever: preset, cards, league strategy. |
-| **Attention-limited** | Unclaimed missions/events, missed tournaments, idle slots, banked gems/medals with obvious uses, stale export | Routine fixes first — they are free. |
+| **Attention-limited** | Unclaimed missions/events, relics left in the mail (`mailedCount`), missed tournaments, idle lab slots, an empty or locked bot sync slot, banked gems/medals with obvious uses, stale export | Routine fixes first — they are free. |
 
 Check which lab slots are **empty right now** before anything else. An empty slot is the most common and
-cheapest fix there is.
+cheapest fix there is. Slots owned = `labsUnlocked` + 1 (the first is free and not counted); an
+`activeQueue` row below that count with `active: false` is idle. If `hasActiveQueueData` is false, the
+export has no queue at all: say the slot state is unknown rather than calling the slots idle.
 
 Sanity-check the diagnosis against the bank balances: an account that is "economy-limited" while holding a
 huge coin balance isn't — it is undecided or time-limited.

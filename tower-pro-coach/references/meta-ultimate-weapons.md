@@ -1,6 +1,6 @@
 # Meta: Ultimate Weapons (UWs), stones, sync, perma targets, UW+
 
-Verified against game version: v29.2.2 — 2026-11-20, updated 2026-11-24
+Verified against game version: v29.2.3 — 2026-11-20, updated 2026-11-25
 
 Main sources
 - SDK knowledge base (`TheTowerSDK`: compartments ultimate-weapons, uw-plus, build-targets, footguns/permanence, perks, jargon; shipped stone chart `uwStoneChartData`; `LAB_CATALOG`; official patch notes to 2026-11-19). Source of every `[mechanic]` and of all stone totals below.
@@ -13,7 +13,7 @@ Tag legend: `[mechanic]` verifiable rule; `[consensus]` community strategy; `[un
 
 The SDK oracle is explicit: UW pick order, whether a sync target is worth chasing, and every "perma"/quantity target are opinion. Only permanence, stat ranges and stone prices are mechanics. Keep that split when advising.
 
-Stone prices: compute with `calc_run` `uw.stoneCost` — it returns the price of the **single level** passed as `level` (the level being bought), so a multi-level purchase is the sum of one call per level. Also `uw.statValue` and `uw.maxLevel`. Unlock prices are positional (`uw.stoneCost` returns `null` at level 0): read the account's next weapon and next UW+ unlock price from `next_unlocks` (`ultimateWeapon.stones`, `ultimateWeaponPlus.stones`), which shows them beside the stone balance; `calc_run` `uw.nextUnlockStoneCost` and `uw.nextPlusUnlockStoneCost` give the same numbers.
+Stone prices: for a range of levels use `form_calc uw.stones {weapon, stat, currentLevel, targetLevel}` — one call returns each level's price and the total, plus `statsForWeapon` with the exact stat strings. `calc_run` `uw.stoneCost` returns the price of the **single level** passed as `level` (the level being bought); the two agree (Golden Tower Cooldown 0→3: 10 + 28 + 46 = 84). Also `uw.statValue` and `uw.maxLevel`. Unlock prices are positional (`uw.stoneCost` returns `null` at level 0): read the account's next weapon and next UW+ unlock price from `next_unlocks` (`ultimateWeapon.stones`, `ultimateWeaponPlus.stones`), which shows them beside the stone balance; `calc_run` `uw.nextUnlockStoneCost` and `uw.nextPlusUnlockStoneCost` give the same numbers.
 
 Exact `weapon` / `stat` strings the calculators accept (the fourth stat is the UW+ ability). A wrong name returns `null` with no error, the same as an unpriced level — if you get `null`, check the name first:
 
@@ -97,7 +97,7 @@ Decision rule: get the three economy UWs (GT, BH, DW) first, in whatever order t
 
 Rule: unlock before upgrading until GT, BH and DW are owned; then buy sync; then duration/bonus on the coin UWs; damage UWs last. At every step compute the candidate costs with `uw.stoneCost` and compare against the next unlock price.
 
-Stopping points per UW `[consensus]` (towerstats UW tier list, Nov 2026; one site's targets, price each with `uw.stoneCost` before quoting): GT Bonus to about x14.6, then Duration to 30s · BH Size to 50m, then Duration to 30s · DW to 3 effect waves · SL Bonus to about x29, then a second beam · CF Cooldown to 60s · CL Quantity to 5, then Chance to 27.5%. `[unverified]` The Spotlight order is disputed: older guides want three beams and angle before Bonus (S3 below).
+Stopping points per UW `[consensus]` (towerstats UW tier list, Nov 2026; one site's targets, price each with `uw.stoneCost` before quoting): GT Bonus to about x14.6, then Duration to 30s · BH Size to 50m, then Duration to 30s · DW to 3 effect waves · SL Bonus to about x29, then a second beam · CF Cooldown to 60s · CL Quantity to 5, then Chance to 27.5%. `[unverified]` The Spotlight order is disputed: older guides want three beams and angle before Bonus (S3 below). `[mechanic]` Settle the Angle part with `calc_run spotlight.coverage {args: {quantity, angleDegrees}}`: coverage is capped at 1, and once it is saturated further Angle levels add nothing.
 
 ### S0–S1 (0–2 UWs)
 - `[consensus]` Save for unlocks. After the first UW a small spend (about 50–150 stones `[older]`) on GT Bonus/Duration or BH Size/Duration is fine while saving for the next unlock. Cheap early levels cost 5–40 stones each `[mechanic]`.
@@ -169,8 +169,9 @@ Common sync shapes (BH : GT : DW), total stones from untouched cooldowns `[mecha
 - `[unverified]` How long a Death Wave tag lasts and whether its coin bonus needs the kill inside the GT
   window is not in the SDK oracle. Do not quote a coin gain for a GT/DW match; say the direction is right
   and the size is unknown.
-- Stone income for "how many weeks until the next unlock" comes from the reward tables in
-  `meta-tournaments.md` § rewards plus the account's own league history (`readTournamentsFromSaveRoot`) —
+- Stone income for "how many weeks until the next unlock" comes from the reward table in
+  `meta-tournaments.md` § 3 (complete, from `TOURNAMENT_REWARD_ROWS`) and the weekly mission track
+  (`DAILY_MISSION_WEEKLY_REWARDS`), plus the account's own league history (`readTournamentsFromSaveRoot`) —
   cross-check against lifetime stones earned ÷ account age, and give the range.
 
 ## 6. Perma targets

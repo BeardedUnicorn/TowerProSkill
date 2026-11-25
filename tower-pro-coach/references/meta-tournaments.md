@@ -1,6 +1,6 @@
 # Tournaments: leagues, rewards, builds and v29 changes
 
-Verified against game version: v29.2.2 — 2026-11-20, updated 2026-11-24
+Verified against game version: v29.2.3 — 2026-11-20, updated 2026-11-25
 
 Main sources
 - SDK: `compartments/meta-game.ts`, `survival.ts`; `src/data/tournaments/data.ts` (leagues, rewards, heat profiles); `facts/v29.2.0/tournament-prizes.json`, `facts/v29.2.1/tier-battle-conditions.json`.
@@ -46,7 +46,7 @@ Stages: New · Early · Mid · Late · Endgame.
 
 ## 3. Leagues, difficulty and rewards
 
-The table below lists selected rank bands, not every rank. For a band it skips, interpolate between its neighbours, say that it is an estimate, and cross-check against the account's own stone history.
+The stones table below is complete: every rank band of every league, from the SDK's `TOURNAMENT_REWARD_ROWS` (re-checked 2026-11-25). Gems per band are in the same table (`find_rows {name: "TOURNAMENT_REWARD_ROWS", where: {league}}` or `calc_run data.getTournamentRewardsForLeague`).
 
 `[mechanic]` Difficulty is "tier+": enemy stats (health, attack, mass, speed pressure) scale faster than the campaign tier of the same number.
 
@@ -61,17 +61,17 @@ The table below lists selected rank bands, not every rank. For a band it skips, 
 | Mythic (v29) | T23+ | 4 | 6 | same; fleet waves; keys; Enemy vault tree |
 
 Stones (and keys) by rank `[mechanic]`
-| League | 1 | 3–4 | 5–6 | 9–10 | 13–15 | 16–22/24 | bottom |
-|---|---|---|---|---|---|---|---|
-| Copper | 20 | 16 | 12 | 9 | 7 | 6 | 5 |
-| Silver | 40 | 30 | 20 | 18 | 16 | 14 | 12 |
-| Gold | 80 | 60 | 40 | 28 | 24 | 22 | 20 |
-| Platinum | 180 | 140 | 80 | 60 | 53 | 50 | 20 |
-| Champion | 300 | 260 | 180 | 160 | 125 | 100 | 20 |
-| Legend | 375 (25 keys) | 325 (15) | 275 (10) | 245 (6) | 215 (2) | 200 (1) | 100 (0) |
-| Mythic | 475 (50) | 425 (40) | 400 (37) | 370 (31) | 340 (25) | 325 (20) | 225 (8) |
+| League | 1 | 2 | 3–4 | 5–6 | 7–8 | 9–10 | 11–12 | 13–15 | 16–22/24 | bottom |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Copper | 20 | 18 | 16 | 12 | 10 | 9 | 8 | 7 | 6 | 5 |
+| Silver | 40 | 35 | 30 | 20 | 19 | 18 | 17 | 16 | 14 | 12 |
+| Gold | 80 | 70 | 60 | 40 | 30 | 28 | 26 | 24 | 22 | 20 |
+| Platinum | 180 | 160 | 140 | 80 | 70 | 60 | 56 | 53 | 50 | 20 |
+| Champion | 300 | 280 | 260 | 180 | 170 | 160 | 150 | 125 | 100 | 20 |
+| Legend | 375 (25 keys) | 350 (20) | 325 (15) | 275 (10) | 260 (8) | 245 (6) | 230 (4) | 215 (2) | 200 (1) | 100 (0) |
+| Mythic | 475 (50) | 450 (45) | 425 (40) | 400 (37) | 385 (34) | 370 (31) | 355 (28) | 340 (25) | 325 (20) | 225 (8) |
 
-- "Bottom" is ranks 23–30 up to Gold and 25–30 from Platinum. Gems also rise with league (Copper 10–100, Mythic 335–900). Full tables: `oracle_get`.
+- "16–22/24" is ranks 16–22 up to Gold and 16–24 from Platinum; "bottom" is ranks 23–30 up to Gold and 25–30 from Platinum. Gems also rise with league (Copper 10–100, Mythic 335–900).
 - `[consensus]` towerstats (Nov 2026): in Mythic the first goal is to stay in. Its bottom ranks still pay 225 stones and 8 keys, more than Legend's ranks 16–24.
 - Reading the table: a safe mid-table finish one league up beats a podium below it (Platinum 16–24 pays 50, Gold 5–6 pays 40; Champion 16–24 pays 100, Platinum 5–6 pays 80; Legend 16–24 pays 200 plus a key, Champion 5–6 pays 180). The bottom six from Platinum to Champion pay 20, so yo-yoing between leagues roughly breaks even at best. v29 rebuilt the tables so deliberate demotion does not pay. `[mechanic-derived]`
 
@@ -187,7 +187,7 @@ What this means for old advice `[consensus]`
 ## 10. Tools
 
 - League, rank history and tickets for the account: the save readers (`run_extractor` / `read_save_field`, see `data-access.md`).
-- Reward rows, heat profiles, battle-condition definitions: `oracle_get` / `oracle_map` (system "tournament").
+- Reward rows: `TOURNAMENT_REWARD_ROWS` via `find_rows`, or `calc_run data.getTournamentRewardsForLeague {args: {league}}`. Heat profiles and battle-condition definitions: `oracle_map {family: "meta-game"}` (tournaments and events), `oracle_get` on a `tournament…` entity id, and the tables `TOURNAMENT_HEAT_PROFILES`, `TOURNAMENT_BATTLE_CONDITION_DEFINITIONS`.
 - Enemy scaling at a wave: `calc_run` `enemy.healthWave100Multiplier`, `enemy.damageWave100Multiplier` (with the tournament flag), `enemy.bossWaveInterval`. Elite spawn chance and the diminishing curve on enemy level reductions: `mechanics.eliteSpawnSinglePercentAtRow`, `mechanics.eliteSpawnDoublePercentAtRow`, `mechanics.diminishedLevelReductions` (SDK 1.7.0+; read `calc_describe` for the inputs first).
-- Stone prices for targets: `uw.stoneCost`, `uw.statValue`, `uw.maxLevel`.
+- Stone prices for targets: `form_calc uw.stones` (current → target level), `uw.stoneCost` (one level), `uw.statValue`, `uw.maxLevel`.
 - Patch changes since the pin: `patch_notes` (see `version.md`).

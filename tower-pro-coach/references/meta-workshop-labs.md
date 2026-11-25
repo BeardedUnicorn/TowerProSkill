@@ -1,6 +1,6 @@
 # Meta: Workshop and Labs
 
-Verified against game version: v29.2.2 — 2026-11-20, updated 2026-11-24
+Verified against game version: v29.2.3 — 2026-11-20, updated 2026-11-25
 
 Main sources
 - SDK knowledge base (`TheTowerSDK/src/knowledge/compartments`: workshop, labs, tower, combat, survival, attack, footguns; `LAB_CATALOG`, `LAB_UNLOCKS`, `facts/v29.2.0/workshop-enhancement-caps.json`, `facts/v29.2.1/labs.json`; official patch notes to 2026-11-19). Source of every `[mechanic]`.
@@ -11,7 +11,7 @@ Main sources
 
 Tag legend: `[mechanic]` verifiable rule; `[consensus]` community strategy; `[unverified]` unconfirmed or disputed; `[older]` pre-2026. Stage keys S0–S5 are defined in `account-assessment.md`.
 
-Costs and durations: never quote from a table in this file. Compute with the MCP: `calc_run` ids `lab.coinCost`, `lab.durationDays`, `lab.maxLevel`, `lab.valueAtLevel`, `lab.coinDiscount`, `lab.speedTotal`, `workshop.statDefinitions`, `workshop.enhancementDefinitions`, `workshop.sectionDiscountPct`, `workshop.enhancementDiscountPct` (confirmed present in SDK 1.7.1; always confirm an id with `calc_list` before relying on it). `form_calc lab.research` returns coins and hours for a lab level in one small answer and is the cheapest way to price a lab. No calculator was found that prices base workshop coin levels — say so rather than estimating, and have the player read the price in game. Use `plan_effective_path` for ranked purchases.
+Costs and durations: never quote from a table in this file. Compute with the MCP: `calc_run` ids `lab.coinCost`, `lab.durationDays`, `lab.maxLevel`, `lab.valueAtLevel`, `lab.coinDiscount`, `lab.speedTotal`, `workshop.statDefinitions`, `workshop.enhancementDefinitions`, `workshop.sectionDiscountPct`, `workshop.enhancementDiscountPct` (confirmed present in SDK 1.7.2; always confirm an id with `calc_list` before relying on it). `form_calc lab.research` returns coins and hours for a lab level in one small answer and is the cheapest way to price a lab; its lab-speed input needs the relic `LabSpeed` total from `workshop.relicBenefitByStat` (see `data-access.md` § "Tables and calculators worth knowing"). Base workshop coin levels: `calc_run mechanics.workshopStatValue {args: {stat, level}}` returns `coinCost` for that level before the workshop discount labs, but returns `null` for Cash Bonus, Coins / Kill Bonus, Knockback Force, Land Mine Chance, Rend Armor Chance, Shockwave Frequency and Wall Rebuild — for those, have the player read the price in game rather than estimating. Use `plan_effective_path` for ranked purchases.
 
 ## Contents
 1. How the workshop works (what a coach must know first)

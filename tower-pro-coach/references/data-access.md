@@ -1,7 +1,8 @@
 # Data access — reading the whole account through the Tower SDK MCP
 
-Everything here was checked against `BeardedUnicorn/TheTowerSDK` (`@beardedunicorn/thetowersdk` 1.7.1,
-`mcp/server.mjs`) and a real v29.2.2 export (build 1296). Only this server is supported.
+Everything here was checked against `BeardedUnicorn/TheTowerSDK` (`@beardedunicorn/thetowersdk` 1.7.2,
+`mcp/server.mjs`) and real exports from v29.2.2 (build 1296) and v29.2.3 (build 1301). Only this server
+is supported.
 
 ## Contents
 1. [Preflight: is it the right server?](#1-preflight)
@@ -38,6 +39,12 @@ breakdown. **Stale build:** a checkout that was pulled but not rebuilt serves ne
 The signs are `next_unlocks` answering without `ultimateWeapon.stones` / `labs.gemRushEfficiency` and with
 no `rushGems` on any running lab, or `readLabsFromSaveRoot` having no `gemRushEfficiency` field. Say so and
 ask for a rebuild; until then treat those prices as unavailable, not as "nothing to unlock".
+The same happens on every release: a 1.7.2 checkout that was pulled but not rebuilt still reads a v29.2.3
+export (build 1301) as `checked: false`, "Game build 1301 is newer than 1296". Rebuilding fixes it; the
+server process must also be restarted, because a running server keeps the old `dist/` loaded.
+**Older than 1.7.2:** the same `checked: false` warning on build 1301. 1.7.2 found no field or reader
+change in that build, so coach normally, say once that the SDK predates the player's game version, and
+suggest the update.
 **Older than 1.7.1:** `readEventShopFromSaveRoot` has no `earnTrack` field and its `relics[]` rows carry
 `earnThreshold`. That build mixes the relics the event awards with the ones its shop sells; ask for an
 update (or a rebuild) and until then do not tell the player which relics the event gives or at how many medals.
@@ -125,7 +132,7 @@ given".
 | `calc_chart` | `chart` | Which calculators produce a chart's numbers. |
 | `calc_graph` | `concept`, `filter`, `offset`, `limit` | What feeds a number. Paged. |
 | `chart_rows` | `chart`, `args` (string[]), `offset`, `limit` (default 40, max 100) | Published table rows; omit `chart` to list charts. |
-| `form_calc` | `id`, `input` (object) | The site's form calculators (lab research, workshop upgrade, module cost, UW stones, bot/guardian upgrades). Omit `id` to list. Ids differ from `calc_list` handles. |
+| `form_calc` | `id`, `input` (object) | The site's form calculators. Omit `id` to list; an `id` alone returns its fields and defaults. Ids differ from `calc_list` handles. The 15 ids: `lab.research`, `uw.stones` (one stat from `currentLevel` to `targetLevel`, per-level and total — use it instead of summing `uw.stoneCost`), `uw.inner-land-mines`, `assist.stones`, `module.cost`, `bot.upgrade` (medals), `guardian.upgrade` (bits), `workshop.upgrade` (enhancements only), `dissonance.boost` (the multiplier from per-tier bests), `uptime.ratio` (UW duration ÷ cooldown), `damage.reduction`, `thorns.damage`, `economy.coins-per-kill`, `enemy.wave`, `drops.enemy`. |
 | `plan_effective_path` | `family*` (`damage` \| `economy` \| `health` \| `regen`), `variant*` (damage: `lab-time`, `lab-coins`, `stone`, `coin`, `keys`; economy: `time`, `coin`, `stone`; health: `lab-time`, `lab-coins`, `stone`, `coin`; regen: `lab-time`, `lab-coins`), `steps` (default 10, max 200), `savePath` (**economy only**), `levels` (object merged over all-zero) | Returns `steps[{step,name,level,cost,roi}]` and `excluded[{sheetName,reason}]`. See §7 on zero-start. |
 | `patch_notes` | **one** of `query`, `introduced`, `version`, `from`+`to`, `recent` per call (given two, it answers one and says which; a `from` later than `to` is refused); plus `limit` (default 5, max 25), `full` (boolean; bodies are cut at 600 chars without it) | With no argument: archive range and latest versions. Use to check whether advice predates a patch. |
 | `wiki_search` | `query*`, `limit` (default 10) | Real page titles. Network. |
@@ -142,6 +149,34 @@ given".
 | `oracle_contradictions` | — | Sources that disagree. |
 | `sdk_sandbox_run` | `mode` (`list` \| `export` \| `calc` \| `format` \| `decode`), `name`, `entry`, `id`, `input`, `value`, `savePath` | Scratchpad. `mode: "format"` with a number `value` writes game notation; with a string it parses it. Annotated as not read-only, so a client may prompt for it; rarely needed. |
 
+### Tables and calculators worth knowing
+
+Checked against the build-1301 export on 2026-11-25. Tables are read with `find_rows {name, where,
+fields}`; calculators with `calc_run {id, args}`.
+
+| Question | Where the answer is | Notes |
+|---|---|---|
+| What has the account's relic collection added, per stat? | `read_save_field {extractor: "readRelicsFromSaveRoot", field: "relics", where: {state: "unlocked"}, pick: ["index"], limit: 100}`, then `calc_run workshop.relicBenefitByStat {args: {relicIndices: [...]}}` | Returns fractions by the game's stat name (`LabSpeed: 0.035` is +3.5%, `CoinBonus`, `TowerDamage`, …). Filter on `state`, not `unlocked`: mailed relics pay nothing. `LabSpeed` is the relic input `form_calc lab.research` needs. |
+| What is a relic, and where does it come from? | `RELIC_GAME_TABLE` (`index`, `stat`, `benefit`, `rarity`, `unlockType`, `unlockCost`, `releaseDate`) | Same index as the save rows. |
+| What does an event award, and is the pass worth it? | `EVENT_RELIC_SETS` (`where: {event: "<name>"}` or `search`) | Each relic's stat, benefit, medal threshold, `needsEventPass`, later shop price (medals) and rotating price (gems). |
+| Stones, gems and keys per league and rank | `TOURNAMENT_REWARD_ROWS` (70 rows), or `calc_run data.getTournamentRewardsForLeague {args: {league}}` | Exact rank bands; never interpolate. |
+| Weekly mission track | `DAILY_MISSION_WEEKLY_REWARDS` | Gems, medals, stones, guild tokens per 5..35 missions. |
+| Milestone rewards and unlocks | `MILESTONE_REWARD_ROWS` (`where: {tier}`) | Standard and premium tracks, by wave. |
+| Tier coin bonus, tier battle conditions | `TIER_COIN_BONUS_ROWS`, `TIER_BATTLE_CONDITION_ROWS` (`where: {tier}`) | Conditions start at Tier 14. |
+| Vault v29 costs and values | `VAULT_V29_POWER`, `VAULT_V29_HARMONY`, `VAULT_V29_ENEMY` | Two rows each: `categories` (unlock costs) and the upgrades (per-level keys and values). The oracle has no vault numbers. |
+| Bot costs and stat ladders | `BOT_UPGRADES_DATA` (`where: {name: "Golden Bot"}`), or `form_calc bot.upgrade` | Medal cost per level, stat base/step/max, lab caps, Bot+ ladder. |
+| Module merges and reroll costs | `MODULE_MERGE_RECIPES`; `calc_run data.getModuleRerollCost {args: {lockedSubstats}}` | Reroll shards per roll by number of locked substats. |
+| Spotlight coverage | `calc_run spotlight.coverage {args: {quantity, angleDegrees}}` | Share of the field lit, capped at 1. Once it saturates, more Angle is worth nothing. |
+| Base workshop coin price of one level | `calc_run mechanics.workshopStatValue {args: {stat, level}}` → `coinCost` (level − 1 → level) | Before the workshop discount labs. Returns `null` for Cash Bonus, Coins / Kill Bonus, Knockback Force, Land Mine Chance, Rend Armor Chance, Shockwave Frequency and Wall Rebuild; for those read the price in game. (`WORKSHOP_DATA` holds every level but each `find_rows` call on it returns a 6,000-name column list.) |
+
+Cautions:
+- Calculators marked `tier: "generated"` in `calc_list` (all 273 `save.*` handles and most `data.*` /
+  `mechanics.*` ones) have a signature but no written purpose or checked invariants. Read
+  `calc_describe` first; skip any that wants an internal config object.
+- `mechanics.coinFarmDays` divides by coins/hour × **23 hours a day** (a planning-sheet default), not by
+  the account's real hours in runs. Do not use it for "how long to save for X": divide the price by the
+  account's measured daily income instead.
+
 ### Tools the coach never calls
 
 `record_mechanic_note`, `record_work_status` and `begin_mechanic_task` **write files** (they append to a
@@ -151,8 +186,9 @@ mechanics map and ledger under the server's directory). They exist for people ch
 
 ## 4. Save readers
 
-34 readers match `read*FromSaveRoot` in SDK 1.7.1 (`decode_save` lists whatever the installed build has —
-trust that list over this table). Each returns an object or `null` when the save has no data for the
+35 functions match `read*FromSaveRoot` in SDK 1.7.2 and `decode_save` runs 34 of them; the extra one,
+`readVaultV29ProgressFromSaveRoot`, returns the same data as `readVaultFromSaveRoot.v29`. (`decode_save`
+lists whatever the installed build has — trust that list over this table.) Each returns an object or `null` when the save has no data for the
 feature; most carry `warnings: string[]` — a non-empty one usually means the save shape changed.
 
 ### Progression
@@ -161,18 +197,18 @@ feature; most carry `warnings: string[]` — a non-empty one usually means the s
 |---|---|---|
 | `readWorkshopFromSaveRoot` | Workshop levels, enhancements, presets | `active.levels` (object, display name → level, e.g. `"Damage"`, `"Coins / Kill Bonus"`), `active.enhancementLevels` (`WSP_*` keys), `presets[]` (same two objects per preset), `meta.currentPreset`, `meta.presetNames`, `meta.totalCoinsSpentWorkshop`, `meta.totalCoinsSpentEnhancements`. `active` is the preset in use. |
 | `readWorkshopUnlocksFromSaveRoot` | Rows unlocked per category | `upgradeTiersUnlocked`, `upgradeTiersEverUnlocked`, `enhancementTiersUnlocked` (`{attack, defense, utility}`), `freeUpgradeLocked[]`, `nextUnlock.{attack,defense,utility}` `{order, stats[], coins, source}` or `null` when the tab is fully unlocked (what `next_unlocks` reports). |
-| `readLabsFromSaveRoot` | Research levels, queue, completion log | `researches[]` `{index, level, displayName, slug, category, percentComplete, completeDate, remainingSeconds}`; `activeQueue[]` `{slotIndex, active, speedUp, speedUpRemainingSeconds, research, remainingSecondsWithSpeedUp, rushGems}`; `gemRushEfficiency`; `completions[]` `{researchIndex, level, completedAt}` oldest first; `labsUnlocked`, `researchedCount`, `maxedCount`, `totalCoinsSpentOnResearch`. Seconds throughout. See §7 for timers. Rows with `displayName: null` are hidden/unnamed (`hiddenUnnamedCount`). |
+| `readLabsFromSaveRoot` | Research levels, queue, completion log | `researches[]` `{index, level, displayName, slug, category, percentComplete, completeDate, remainingSeconds}`; `activeQueue[]` `{slotIndex, active, speedUp, speedUpRemainingSeconds, research, remainingSecondsWithSpeedUp, rushGems}`; `gemRushEfficiency`; `completions[]` `{researchIndex, level, completedAt}` oldest first; `labsUnlocked` (slots **bought with gems**: the first slot is free, so slots owned = `labsUnlocked + 1`), `hasActiveQueueData` (false = the export has no queue, which says nothing about idle slots), `researchedCount`, `maxedCount`, `totalCoinsSpentOnResearch`. Seconds throughout. See §7 for timers. Rows with `displayName: null` are hidden/unnamed (`hiddenUnnamedCount`). |
 | `readFavoriteLabSlugsFromSaveRoot` | Starred labs | `string[]`; empty when none starred. |
 | `readUltimateWeaponsFromSaveRoot` | UW unlocks and levels | `ownedCount`, `nextUnlockStoneCost`, `allWeaponsOwned`, `plusOwnedCount`, `nextPlusUnlockStoneCost`; `slots[]` `{slotIndex, unlocked, active, plusLevel, plusUnlocked, plusOn, baseStatLevels[3]}`. **No names**: `slotIndex` 0–8 = Chain Lightning, Smart Missiles, Death Wave, Chrono Field, Inner Land Mines, Golden Tower, Poison Swamp, Black Hole, Spotlight. `baseStatLevels[3]` follows the first three stats of each weapon in the order listed in `meta-ultimate-weapons.md` (e.g. Golden Tower: Multiplier, Duration, Cooldown) — sanity-check one value against what the player sees. Trust `baseStatLevels` only when `baseStatChunkingPlausible` is true. |
 | `readCardsFromSaveRoot` | Card levels, copies, slots | `cards[]` `{slug, name, level, count, unlocked, active, masteryUnlocked}`, `equippedCards[]`, `slotsUnlocked`, `currentPreset`, `presetNames`, `presetSlots[]` (flat, per preset × slot). `count` = spare copies toward the next level, not a lifetime total. |
 | `readCardDrawOddsFromSaveRoot` | What the next card purchase can give | `pool[]` `{card, name, rarity, level, inPool, drawable, gatedBy}` and `odds` `{rarities, cards[{card, chance}]}`, as the in-game Card Chances panel shows them. `drawable: false` with `gatedBy: null` = maxed, so it has left the pool; `inPool: false` with `gatedBy {tier, wave}` = that milestone is not claimed yet. Use it before recommending gems on cards. |
-| `readModulesFromSaveRoot` | Equipped and owned modules, shard balances | `equipped[]` `{slotKey ("primary:Cannon" … "assist:Core"), role, category, mappedName, mappedInitials, level, rarityLabel, rarityEnum, effects[], effectLocked[], guid, shardsSpent, coinsSpent}`; `inventory[]` same minus slot fields; `shards` `{cannon, armor, generator, core, rerollCurrency, tickets}`. `equipped[].level` is the **slot** level (§7). `coinsSpent` is approximate above ~9e15. |
-| `readModuleEconomyFromSaveRoot` | Slot levels, pity, assist slots, module presets | `slotLevels[4]` (Cannon, Armor, Generator, Core), `slotCoinsSpent`, `slotShardsSpent`, `pity` / `rarePity` (pulls since last epic / rare), `assistSlots[]` `{category, unlocked, level, mainEffectEfficiencyLevel, substatEfficiencyLevel, uniqueEffectEfficiencyLevel}`, `presets[]` (module GUIDs per slot), `epicObtained`, `merges`, `gemsSpent`, `lifetimeShards`. |
+| `readModulesFromSaveRoot` | Equipped and owned modules, shard balances | `equipped[]` `{slotKey ("primary:Cannon" … "assist:Core"), role, category, mappedName, mappedInitials, level, rarityLabel, rarityEnum, effects[], effectLocked[], guid, shardsSpent, coinsSpent, rerollCounter}`; `inventory[]` same minus slot fields; `shards` `{cannon, armor, generator, core, rerollCurrency, tickets}`. `equipped[].level` is the **slot** level (§7). `coinsSpent` is approximate above ~9e15. `rerollCounter` = rerolls already spent on that module (weigh before advising more reroll shards on it). Assist slots add `assistUniqueEffectUpgradeLevel` (0–3 paid rungs), `assistSlotUniqueRarity` and `effectiveUniqueRarity` (the slot's rung capped by the module's own rarity) — what the unique effect actually runs at. |
+| `readModuleEconomyFromSaveRoot` | Slot levels, pity, assist slots, module presets, reroll settings | `slotLevels[4]` (Cannon, Armor, Generator, Core), `slotCoinsSpent`, `slotShardsSpent`, `pity` / `rarePity` (pulls since last epic / rare), `assistModulesAvailable` (assist modules unlocked at all), `assistSlots[]` `{category, unlocked, level, mainEffectEfficiencyLevel, substatEfficiencyLevel, uniqueEffectEfficiencyLevel}`, `presets[]` (module GUIDs per slot) with `currentPreset`, `epicObtained`, `merges`, `gemsSpent`, `lifetimeShards`. `substatBans` / `autoRerollSubstats` (per category: substat ids banned from rolls / kept by auto-reroll) name with `MODULE_SUBSTATS_CLUSTER` on `clusterValue` — an inferred mapping (it agrees by category on a real export but the SDK does not state it), so say so if you rely on it. |
 | `readBotsFromSaveRoot` | Bots, levels, presets | `bots[]` `{name, label, unlocked, active, statLevels[4], plusUnlocked, plusLevel}` for the active preset; `presets[]`; `totalStonesSpent`, `totalMedalsSpent`; `synchronicity`. `statLevels` is positional and the stat order differs per bot (Flame: Damage Reduction, Cooldown, Damage, Range; Thunder: Duration, Cooldown, Linger, Range; Golden/Amplify: Duration, Cooldown, Bonus, Range). |
-| `readBotSynchronicityFromSaveRoot` | Bot sync | `inSave`, `unlocked`, `level`, `slotCount`, `slots[]`, `bots[]`. |
-| `readGuardiansFromSaveRoot` | Guardian, chips, presets | `guardianUnlocked`, `inGuild`, `activeInBattle`, `chips[]` `{label, unlocked, statLevels[3], equippedSlot}`, `equippedChips[]`, `chipSlotCount`, `slotsUnlocked`, `presets[]`, `totalCoins`, `totalCatches`. `slotsUnlocked` counts **bought** slots; owned slots = `chipSlotCount`. Chips do nothing outside a guild since v29.1 — check `activeInBattle`. |
-| `readVaultFromSaveRoot` | Vault | `keys`, `totalKeysEarned`, `v29.levels` (object, `v29:…` key → level), `v29.unlockedGroupCount`, `v29.upgradeCount`; legacy `powerNodes[]` / `harmonyNodes[]` `{id, name, level, unlocked, maxLevel}`. Read `v29` first on a v29+ account. |
-| `readRelicsFromSaveRoot` | Relics | `unlockedCount`, `relics[]` `{index, name, label, description, unlocked, onProfile}` (one row per catalog relic, hundreds), `profileRelicIndices`. Page with `where: {unlocked: true}`. A mailed-but-unclaimed relic is not `unlocked`. |
+| `readBotSynchronicityFromSaveRoot` | Bot sync | `inSave`, `unlocked`, `level`, `slotCount`, `slots[]`, `bots[]`, `occupiedSlots` (fewer than `slotCount` = an empty sync slot, a free fix), `lockedBots` (bots sitting in a slot without being unlocked, a pre-v29.1 bug: point it out). |
+| `readGuardiansFromSaveRoot` | Guardian, chips, presets | `guardianUnlocked`, `inGuild`, `activeInBattle`, `chips[]` `{label, unlocked, statLevels[3], equippedSlot}`, `equippedChips[]`, `chipSlotCount`, `slotsUnlocked`, `presets[]` with `currentPreset`, `totalCoins`, `totalCatches`. `slotsUnlocked` counts **bought** slots; owned slots = `chipSlotCount`. Chips do nothing outside a guild since v29.1 — check `activeInBattle`. |
+| `readVaultFromSaveRoot` | Vault | `keys`, `totalKeysEarned`, `v29.levels` (object, `v29:<tree>:<category>:<name>` → level), `v29.unlockedGroupCount`, `v29.upgradeCount`, `v29.unknownVaultIds` / `v29.unknownGroups` (non-empty = the SDK is older than the game). Costs and values: `VAULT_V29_POWER` / `_HARMONY` / `_ENEMY` (§3). The legacy `powerNodes[]` / `harmonyNodes[]` and their counts are empty since the v29 rework; read `v29`. |
+| `readRelicsFromSaveRoot` | Relics | `unlockedCount`, `mailedCount`, `relics[]` `{index, name, label, description, unlocked, state, onProfile, rarity, benefit, stat, unlockType, unlockCost, unlockDescription, event, releaseDate}` (one row per catalog relic, 350), `profileRelicIndices`. **`unlocked` is true for a mailed relic too, and `unlockedCount` counts mailed ones; only `state: "unlocked"` pays its bonus.** `mailedCount` > 0 = relics waiting in the mail: tell the player to claim them. `benefit` is a fraction (0.02 = 2%; seconds for WallRebuild, metres for BotRange) on the game's `stat` name. Page with `where: {state: "unlocked"}`; per-stat totals with the recipe in §3. |
 | `readTierRecordsFromSaveRoot` | Per-tier bests | `tiers[]` `{tier, highestWave, highestWaveThisCycle, roundsStarted, highestCoinsEarned, highestCellsEarned}`, `currentTier`. `currentTier` is the tier selected now, often **not** the highest reached. |
 | `readMilestonesFromSaveRoot` | Milestone claims | `tiers[]` `{tier, claimedSlots[], premiumClaimedSlots[], premiumUnlocked}`, `slotsPerTier`. |
 | `readPerkChoicesFromSaveRoot` | Perk bans and auto-pick | `bannedIndices`, `firstPerkIndex`, `firstTradeOffPerkIndex`, `autoPickPerk`, `autoPickOrder`. Indices only — name them with `find_rows {name: "PERK_IMPORT_CATALOG", where: {index: N}}`, never from memory. |
@@ -199,7 +235,7 @@ feature; most carry `warnings: string[]` — a non-empty one usually means the s
 |---|---|---|
 | `readExportInfoFromSaveRoot` | The export about itself | `exportedAt` (ISO), `versionNumber` (game **build** number, not "29.2"), `dataVersion`, `exportVersion`, `checked`, `unknownKeys[]`, `warnings[]`. Read this first (§7). |
 | `readGlobalPresetsFromSaveRoot` | Global Presets | `presets[]` `{name, workshop, cards, bots, modules, guardians}` (preset index per system), `currentPreset`, `tierPreset`, `tournamentPreset`, `dissonantPreset`. Tells you which loadout is used for farming / tournament / dissonant runs. |
-| `readRuntimeControlsFromSaveRoot` | In-run toggles | `targetPriority`, `targetPriorityList`, `lifeSavingOrder`, range/orb selections, `energyShieldRestrictionToggle`. |
+| `readRuntimeControlsFromSaveRoot` | In-run toggles | `targetPriority`, `targetPriorityList`, `lifeSavingOrder` (ids: 0 Death Defy, 1 Energy Shield, 2 Second Wind, 3 Demon Mode, 4 Nuke), range/orb selections (units not established), `energyShieldRestrictionToggle`. |
 | `readProfileFromSaveRoot` | Profile | `userName`, `avatarId`, `inGuild`, `lastGuildSeason`. **Do not read this for coaching**: `userName` is personal data (see Privacy in §7). `inGuild` is also on `readGuardiansFromSaveRoot`. |
 | `readThemesFromSaveRoot` | Cosmetics | `unlocked[]`, `selected`, `skinsBought`. Rarely needed. |
 | `readCollectedThemeNamesFromSaveRoot` | Owned theme names | `string[]`. Rarely needed. |
@@ -220,7 +256,7 @@ feature; most carry `warnings: string[]` — a non-empty one usually means the s
 - **`average`**: text fields averaged across the runs the SDK could build reports for.
 
 **Raw run record** (`detail: true`, or `read_save_field` with `extractor: "listImportableBattleRuns"`):
-148 numeric fields plus `battleDate` (string) and `isTournament` (boolean). Groups:
+148 columns: 146 numbers plus `battleDate` (string) and `isTournament` (boolean). Groups:
 
 | Group | Fields |
 |---|---|
@@ -233,6 +269,7 @@ feature; most carry `warnings: string[]` — a non-empty one usually means the s
 | Survival | `damageTaken`, `damageTakenWall`, `deathDefy`, `lifesteal`, `towerHealthRegen`, `wallHealthRegen`, `recoveryPackages`, `defensePercentBlocked`, `defenseAbsoluteBlocked`, `chronoFieldBlocked`, `energyShieldHitsAbsorbed`, `nukesUsed`, `secondWindsUsed`, `demonModesUsed` |
 | Utility | `wavesSkipped`, `largestWaveSkip`, `freeAttackUpgrades`, `freeDefenseUpgrades`, `freeUtilityUpgrades`, `attackLevelSkips`, `healthLevelSkips`, `highestCPM`, `largestGoldenCombo` |
 | Guardian fetch | `guardianCatches`, `guardianGems`, `guardianMedals`, `guardianRerollShards`, `guardian*Shards`, `guardianCommonModules`, `guardianRareModules` |
+| Other (about 22 more) | `enemiesHitBy*ThisRound` (14, one per damage source), `*Blocked` (chain thunder, flame bot, primordial collapse, magic orb), Berserk damage, `thunderBotStuns`, `guardianSummoned`, `cashFromGoldenTower`, `orbHits`, `largestILMCharge`, `mostCoinsFromWaveSkip` — check `detail: true` for exact names before citing one |
 
 **`killedBy` is an index** in the raw record (the compact row already names it). Save order, from the
 SDK's `SAVE_FILE_KILLED_BY_ENEMY_NAMES` / `getKilledByFromSave`:
@@ -276,7 +313,8 @@ to re-look-up a detail you already read, but it does not replace the read below.
      follow `next` (a few hundred rows);
    - labs `completions` — only the tail: `offset: -30`;
    - modules `inventory` — `pick: ["mappedName","category","rarityLabel","level","favorite"]`, `limit: 100`;
-   - relics `relics` — `where: {"unlocked": true}`, `pick: ["name","description"]`, `limit: 100`;
+   - relics `relics` — `where: {"state": "unlocked"}`, `pick: ["index","name","stat","benefit"]`, `limit: 100`;
+     pass the indices to `workshop.relicBenefitByStat` for per-stat totals (§3), and note `mailedCount`;
    - cards `presetSlots` — only if comparing presets.
 5. `battle_history {path, limit: 50}` — every run, compact, plus peak `coinsPerHour`.
 6. `read_save_field {extractor: "listImportableBattleRuns", path, limit: 30, pick: [...]}` for the numbers
@@ -294,8 +332,9 @@ Never conclude "the player has none" from a preview: check `outlined`, `truncate
 - **`null` is not zero.** A reader returning `null`, or a field that is `null`, means the save does not
   record it — not that the player has none.
 - **Newer game than the SDK.** `readExportInfoFromSaveRoot.checked: false`, or anything in its `warnings`
-  / `unknownKeys`, means the export is newer than the SDK was verified against (1.7.1: build 1296 =
-  v29.2.2, data version 35). Renamed fields then read as missing; tell the player and update the SDK.
+  / `unknownKeys`, means the export is newer than the SDK was verified against (1.7.2: build 1301 =
+  v29.2.3, data version 35). Renamed fields then read as missing; tell the player and update the SDK.
+  Rule out a stale build first (§1): an up-to-date checkout that was not rebuilt warns the same way.
 - **Module levels live on the slot since v29.** `readModulesFromSaveRoot.equipped[].level` is already the
   slot level; `readModuleEconomyFromSaveRoot.slotLevels` is the same per primary slot. `inventory[].level`
   may be a retired placeholder — never use it to rank modules. Levelling raises the main effect only,
@@ -350,10 +389,14 @@ Never conclude "the player has none" from a preview: check `outlined`, `truncate
   `{"purchases": {"hasStarterPack": true}}` — state pack what-ifs as facts, never as a push to buy.
 - `uw.stoneCost` / `uw.statValue` return `null` both for a wrong `weapon`/`stat` string and for a level with
   no price. Check the exact strings in `meta-ultimate-weapons.md` before concluding a level is unavailable.
-  `uw.stoneCost` prices one level; sum a range level by level. The next weapon unlock is
+  `uw.stoneCost` prices one level; for a range use `form_calc uw.stones {weapon, stat, currentLevel,
+  targetLevel}`, which lists each level and the total (Golden Tower Cooldown 0→3 = 10 + 28 + 46 = 84 in
+  both). Its `statsForWeapon` gives the exact stat strings. The next weapon unlock is
   `next_unlocks.ultimateWeapon.stones` (or `calc_run uw.nextUnlockStoneCost`), not `uw.stoneCost`.
-- `readLabsFromSaveRoot.labsUnlocked` has been seen one lower than the number of active queue slots. Count
-  slots from `activeQueue` (and which have `active: true`) when checking for an idle slot.
+- `readLabsFromSaveRoot.labsUnlocked` counts only the slots bought with gems; the first slot is free, so
+  slots owned = `labsUnlocked + 1`. `activeQueue` lists all five slots: a row with `active: false` whose
+  `slotIndex` is below the owned count is an **idle slot**. If `hasActiveQueueData` is false, the queue is
+  missing from the export — say so instead of reporting idle slots.
 - `readBotsFromSaveRoot.totalStonesSpent` has been seen equal to the account's lifetime stones spent on
   everything; do not present it as bot spending without cross-checking.
 - The server's own instructions tell agents to call `begin_mechanic_task` / `record_work_status` first.
@@ -375,7 +418,8 @@ Never conclude "the player has none" from a preview: check `outlined`, `truncate
   "prerequisite not met" for labs the account already has. Use the ordering, not the absolute values.
 - `form_calc lab.research` needs the account's lab speed and coin discount as inputs. Speed percent that
   matched `lab.durationDays` on a real save: ((1 + 0.02 × Labs Speed lab level) × (1 + lab-speed relic
-  bonus) × slot boost − 1) × 100; coin discount from `calc_run lab.coinDiscount` with the Labs Coin Discount
+  bonus) × slot boost − 1) × 100, where the relic bonus is `LabSpeed` from `workshop.relicBenefitByStat`
+  (§3); coin discount from `calc_run lab.coinDiscount` with the Labs Coin Discount
   lab level. Verify one known lab (cost shown in game or a queued lab's duration) before pricing a list.
 - With Auto Export on, the game rewrites `tool_export.json` while you work. Note `exportedAt` at the first
   read; if the snapshot or a later read shows a newer one, say which export the numbers come from.

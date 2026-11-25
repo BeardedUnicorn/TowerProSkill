@@ -2,7 +2,7 @@
 name: tower-pro-coach
 description: Coaches a player's account in The Tower – Idle Tower Defense from their own game export. Use when the user asks to be coached in The Tower, shares or mentions a tool_export.json or game export, asks "review my account", "what should I do next", where to spend stones, gems, coins, medals, keys or cells, which UW, lab, card, module, bot or relic to get next, how to farm more coins or cells, push tiers, climb tournament leagues or use the current event, or asks any progression question in the game's own terms (GT, BH, DW, perma, sync, devo, eHP, Legends, dissonance) even if the game is not named. Reads the export through the BeardedUnicorn/TheTowerSDK MCP server, covers the whole account (workshop, labs, cards, modules, ultimate weapons, bots, guardian, vault, relics, events, currencies, tournaments, last 30 runs), prices every recommendation with the SDK's calculators, ranks the highest-value next steps, flags permanent choices and tracks progress between sessions.
 license: MIT
-compatibility: Requires the BeardedUnicorn/TheTowerSDK MCP server, version 1.5.0 or later (tools such as decode_save, run_extractor, read_save_field, battle_history, next_unlocks, coin_bonus, calc_run, oracle_footguns); 1.7.1 or later for event relic advice. Node 22+ for the optional snapshot script, Python 3 for the snapshot diff.
+compatibility: Requires the BeardedUnicorn/TheTowerSDK MCP server, version 1.5.0 or later (tools such as decode_save, run_extractor, read_save_field, battle_history, next_unlocks, coin_bonus, calc_run, oracle_footguns); 1.7.1 or later for event relic advice; 1.7.2 or later reads v29.2.3 exports as checked. Node 22+ for the optional snapshot script, Python 3 for the snapshot diff.
 ---
 
 # Tower Pro Coach
@@ -41,8 +41,9 @@ In that reply:
 
 The server is present but `next_unlocks` and `coin_bonus` are missing: it is older than 1.5.0. Coach with
 what is there and tell the player that updating adds unlock pricing and the coin-bonus breakdown. If
-those two tools answer without prices, the server was updated but not rebuilt — see
-`references/data-access.md` § preflight, "Stale build".
+those two tools answer without prices, or a v29.2.3 export (build 1301) reads `checked: false` "newer
+than 1296", the server was updated but not rebuilt or not restarted — see `references/data-access.md`
+§ preflight, "Stale build".
 
 Tool arguments are checked strictly: a misspelt or misplaced argument is refused, not ignored. The export
 is `path` on the save tools and `savePath` on `calc_run` and `plan_effective_path`.
@@ -150,9 +151,16 @@ Then put numbers on the candidates:
   research, module cost, UW stones — small answers), or `calc_list` to find a handle, `calc_describe` for
   its parameters when unclear (its answers are long), `calc_run` for the value (`lab.coinCost`, `lab.durationDays`,
   `uw.stoneCost`, `uw.statValue`, `module.stat`, …). Read `calc_describe` before trusting a number — for
-  example `uw.stoneCost` prices a single level, so a three-level purchase is three calls summed, and a
-  wrong stat name returns `null` rather than an error. A recommendation the player can't afford for three
-  months is a savings goal, and you can only tell which it is by pricing it against their income.
+  example `uw.stoneCost` prices a single level (for a range use `form_calc uw.stones`, which takes
+  current and target level), and a wrong stat name returns `null` rather than an error. A recommendation
+  the player can't afford for three months is a savings goal, and you can only tell which it is by
+  pricing it against their income: price ÷ the account's measured daily income, not
+  `mechanics.coinFarmDays` (it assumes 23 hours of runs a day).
+- **Game tables** answer the rest without guessing — stones per league and rank
+  (`TOURNAMENT_REWARD_ROWS`), what an event's relics do (`EVENT_RELIC_SETS`), Vault costs
+  (`VAULT_V29_*`), the relic bonus the account already has per stat (unlocked relic indices →
+  `workshop.relicBenefitByStat`). The list is in `references/data-access.md` § "Tables and calculators
+  worth knowing".
 - **Unlock prices** come from `next_unlocks`: the next workshop unlock per tab (full price — the discount
   labs do not apply to unlocks), the next UW and UW+ in stones, and the gem price to rush each running
   lab at the moment of the export.
