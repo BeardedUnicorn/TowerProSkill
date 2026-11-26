@@ -9,4 +9,4 @@ playerInfo.dat
 *.skill
 .mcp.json
 coaching/
-evals/results/
+**/evals/results/

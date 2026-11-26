@@ -1,6 +1,6 @@
 # Data access — reading the whole account through the Tower SDK MCP
 
-Everything here was checked against `BeardedUnicorn/TheTowerSDK` (`@beardedunicorn/thetowersdk` 1.7.2,
+Everything here was checked against `BeardedUnicorn/TheTowerSDK` (`@beardedunicorn/thetowersdk` 2.1.0,
 `mcp/server.mjs`) and real exports from v29.2.2 (build 1296) and v29.2.3 (build 1301). Only this server
 is supported.
 
@@ -28,7 +28,11 @@ fall back to anything else.
 Two ways to install it:
 - **Claude Desktop extension**: every SDK release (1.4.0+) attaches `thetowersdk.mcpb`
   (`https://github.com/BeardedUnicorn/TheTowerSDK/releases/latest/download/thetowersdk.mcpb`). Opening it
-  installs the server with nothing to build.
+  installs the server with nothing to build. Its three settings are all optional (SDK 2.1.0): **Tool
+  Export** (`TOWER_TOOL_EXPORT`; leave it empty on a Mac, set it on Windows and Linux), **Notes Folder**
+  and **Offline Wiki** (answer only from wiki pages already on disk, so `wiki_search` / `wiki_page` may
+  come back empty). The app shows the installed version; a build that is not a release reads
+  `<version>-dev.<commit>`.
 - **Git checkout**: `claude mcp add thetowersdk -- node <path>/mcp/server.mjs`. The server reads the
   compiled `dist/` folder, so run `pnpm build` after cloning **and after every `git pull`**, then restart
   the MCP server.
@@ -42,6 +46,22 @@ ask for a rebuild; until then treat those prices as unavailable, not as "nothing
 The same happens on every release: a 1.7.2 checkout that was pulled but not rebuilt still reads a v29.2.3
 export (build 1301) as `checked: false`, "Game build 1301 is newer than 1296". Rebuilding fixes it; the
 server process must also be restarted, because a running server keeps the old `dist/` loaded.
+**Which version is running:** from 2.1.0 the server writes one line to its log (stderr) at start:
+`[thetowersdk] <version>: <n> tools, <n> prompts, export <path> | no export found, notes in <dir>`. A
+player who can open the MCP log can read the version and whether the export was found from it. Without the
+log, tell versions apart by what answers: `calc_list {filter: "vault.v29"}` matches four calculators
+from 2.1.0, and `chart_series` / `save_series` exist from 2.0.0.
+**Older than 2.1.0:** no `vault.v29.*` calculators. The `vault.nodeKeysCost`, `vault.nodeKeysBetween` and
+`vault.treeKeysRemaining` handles that build does have price the **pre-v29** trees: never quote them for
+a current account. Read `VAULT_V29_*` with `find_rows` instead.
+**Older than 2.0.0:** no `chart_series`, `save_series` or `…Between` range calculators (sum single levels,
+or use `form_calc`), and four workshop handles have their old names: `mechanics.workshopStatValue` (now
+`workshop.statValue`), `mechanics.standardElsCoinUpgradeCost` (`workshop.levelSkipNextLevelPrice`),
+`mechanics.getWorkshopUtilityLevelSkipChance` (`workshop.levelSkipChance`) and
+`data.computeWorkshopStatNumericValueAtLevel` (`workshop.tableValue`). On that build
+`mechanics.workshopStatValue` answers in a planning sheet's units with no unit named (Enemy Level Skip
+reads ten times too high, Recovery Amount a hundred times too low) and its level-skip price is one row
+late: use its `coinCost` only, and suggest the update.
 **Older than 1.7.2:** the same `checked: false` warning on build 1301. 1.7.2 found no field or reader
 change in that build, so coach normally, say once that the SDK predates the player's game version, and
 suggest the update.
@@ -80,13 +100,16 @@ adb pull /storage/emulated/0/Android/data/com.TechTreeGames.TheTower/files/tool_
 ```
 
 **The server finds the file itself (SDK 1.2.0+).** Every save tool that takes `path` (`decode_save`,
-`run_extractor`, `read_save_field`, `battle_history`, `next_unlocks`, `coin_bonus`) may be called with no
+`run_extractor`, `read_save_field`, `battle_history`, `save_series`, `next_unlocks`, `coin_bonus`) may be called with no
 `path`: the server then reads the file the `TOWER_TOOL_EXPORT` environment variable names, or on a Mac
 the game's own container. Try `decode_save {}` first. Its answer carries the absolute `path` it read —
 tell the player which file that is, and reuse that string as `savePath` for `calc_run` and
 `plan_effective_path`, which have **no** auto-discovery. If nothing is found the
 answer is an `error` with `searched` (the places it looked) and a `hint`; then use the commands above or
-ask the player.
+ask the player. From SDK 2.1.0 a `TOWER_TOOL_EXPORT` (the extension's Tool Export setting) that names no
+file is an `error` too — the server no longer falls back to another export on the machine, so an answer
+is never about a different account than the one configured. Tell the player to fix or clear the setting;
+an explicit `path` reads that file regardless.
 
 If several macOS matches appear, take the most recently modified and confirm with `decode_save`. On
 iOS, suggest looking in Files → On My iPhone/iPad for a Tower folder, and otherwise AirDrop/Files the
@@ -104,6 +127,11 @@ tools and `savePath` on `calc_run`, `plan_effective_path` and `sdk_sandbox_run`.
 `battle_history` is now an error (it used to read the default export silently). `null` counts as "not
 given".
 
+**Structured output (SDK 2.1.0).** To a client on MCP revision `2025-06-18` every successful answer also
+arrives as `structuredContent` matching the tool's `outputSchema`; the text block is unchanged, and a
+failed call is still `isError` plus text. Nothing in this file changes: the field names are the same
+either way. Expect fields the schema does not name, and `null` where a number was NaN.
+
 ### Save tools (read-only on the file)
 
 | Tool | Parameters | Returns / limits |
@@ -112,6 +140,7 @@ given".
 | `run_extractor` | `extractor*`, `path` | One reader's result as a preview: up to 40 top-level keys and **12,000 characters of values**. Fields that do not fit are listed in `outlined` as a shape (`kind`, `length`, first 12 `columns`) — they are **not missing**. `warnings` (max 20 shown). `result: null` = save has no data for that feature. |
 | `read_save_field` | `extractor*`, `path`, `field` (dotted path, e.g. `researches`, `active.levels`, `slots.0.baseStatLevels`), `pick` (string[]: columns of a list / keys of an object), `where` (object, column → value, compared as text; lists only), `search` (text in any top-level column; lists only), `offset` (negative counts from the end), `limit` | Lists: default 20 rows, max 100, and a page is also cut at 12,000 characters (`sizeLimited`) — use `pick`. Objects: default 100 keys, max 500. `truncated` + `next` = pass `next` as `offset`. Omit `field` to read the result itself. Unknown arguments are refused. |
 | `battle_history` | `path`, `kind` (`all` \| `farming` \| `tournament`), `detail` (boolean), `offset`, `limit` | Default 10 runs, max 50. See §5. With `detail: true` a page stops early when it gets large (`sizeLimited`, with the `offset` for the next page); use `limit` ≤ 3 with it. |
+| `save_series` | `path`, `series`, `offset`, `limit` (default 40, max 100) | The save's history as `{x, y}` points (SDK 2.0.0). Omit `series` to list what this save holds (`id`, `title`, `points`, `unit`); nine ids on a developed account: `save:battle:coins-per-hour`, `:wave`, `:coins`, `:cells` (one point per run, `x` = run date in ms since the epoch), `save:tournament:wave`, `save:tournament:rank` (per tournament by date; one still running is left out, since rank 0 is not a placing), `save:tier:highest-wave`, `:highest-coins`, `:highest-cells` (`x` = tier). See §5. |
 | `next_unlocks` | `path` | What the account can open next, beside the balance that pays for it. `balances {coins, stones, gems}`; `workshop.{attack,defense,utility}` `{unlocked, next: {opens[], coins}, affordable}`; `ultimateWeapon {owned, stones, affordable}`; `ultimateWeaponPlus {owned, stones, allWeaponsOwned, affordable}`; `labs {gemRushEfficiency, maxedLabs, running[{slot, lab, completedLevel, remainingSeconds, rushGems, affordable}]}`. `next: null` / `stones: null` = nothing left to unlock there. `affordable: null` = cannot tell, not "cannot pay". See §7. |
 | `coin_bonus` | `path`, `tier` (number; default = the tier selected in the save), `overrides` (object merged one level deep over the answer's `input`) | The Battle tab's **Total Coin Bonus** row by row: `bonus {disableAds, starterPack, epicPack, activeCards, modules, difficultyTier, themes, relics, enhancement, dissonance, total}` — every row is a multiplier and `total` is their product — plus the `input` it was built from. With `overrides` the answer adds `whatIf {overrides, input, bonus, totalRatio}`: the new rows beside the old, and `totalRatio` = new total ÷ old total. An override key the `input` does not have is refused. See §7. |
 
@@ -126,12 +155,13 @@ given".
 | `get_export` | `name*`, `limit` (default 40, max 100) | Preview, 12,000-character budget. |
 | `find_rows` | `name*`, `where`, `search`, `fields` (string[]), `offset`, `limit` (default 20, max 100) | Rows of one table. Object-keyed exports gain a `_key` column. Note the column parameter is `fields` here and `pick` on `read_save_field`. |
 | `describe_schema` | `table` (omit to list tables) | Declared shape of a data table. |
-| `calc_list` | `filter`, `offset`, `limit` (default 60, max 100) | ~1,550 calculators; always filter, and page with `offset` when `matched` exceeds `shown`. Save-reading ones are `save.*`. |
+| `calc_list` | `filter`, `offset`, `limit` (default 60, max 100) | ~1,600 calculators; always filter, and page with `offset` when `matched` exceeds `shown`. Save-reading ones are `save.*`. |
 | `calc_describe` | `id*` | Params with units, invariants, linked oracle traps. |
 | `calc_run` | `id*`, `args` (object — calculator parameters go **inside** `args`), `savePath` | `savePath` decodes the export and passes it as the calculator's `root` / `parsedRoot` parameter. Unknown top-level keys are refused — a calculator parameter placed beside `args` instead of inside it is an error. A large result comes back as a preview, not whole. |
 | `calc_chart` | `chart` | Which calculators produce a chart's numbers. |
 | `calc_graph` | `concept`, `filter`, `offset`, `limit` | What feeds a number. Paged. |
-| `chart_rows` | `chart`, `args` (string[]), `offset`, `limit` (default 40, max 100) | Published table rows; omit `chart` to list charts. |
+| `chart_rows` | `chart`, `args` (string[]), `offset`, `limit` (default 40, max 100) | Published table rows as formatted text; omit `chart` to list the 72 charts. Handy ids: `vault:v29:harmony` / `:power` / `:enemy` (the two `vault:upgrades-and-cost:*` charts are pre-v29), `tournaments:rewards:<league>`, `ultimate-weapons:unlocks:stone-ladder`, `ultimate-weapons:stone-costs:<weapon>`, `bots:upgrades-and-costs:<bot>`, `guardians:upgrades-and-costs:<chip>`, `modules:costs:upgrade-costs-by-level`, `labs:gems:rush-gems-by-time-left`, `tiers:coins:coin-bonus-by-tier`, `currencies:cells:elite-cells-by-tier`. Before SDK 2.0.0 the Golden, Thunder and Amplify bot charts all returned Flame Bot's rows. |
+| `chart_series` | `series`, `family` (`lab`, `workshop`, `card`, `ultimate-weapon`, `bot`, `guardian`, `module`, `enhancement`, `vault-v29`, `vault`, `unlock-ladder`), `entity`, `offset`, `limit` (default 40, max 100) | One cost or value curve as plain `{x, y}` numbers by id, e.g. `lab:damage:cost` (SDK 2.0.0). Omit `series` to list ids, narrowed by `family` / `entity`. `vault-v29` is the current vault; `vault` is the pre-v29 trees. For a price to quote, a `…Between` calculator is one call; this is for showing the player a whole curve. |
 | `form_calc` | `id`, `input` (object) | The site's form calculators. Omit `id` to list; an `id` alone returns its fields and defaults. Ids differ from `calc_list` handles. The 15 ids: `lab.research`, `uw.stones` (one stat from `currentLevel` to `targetLevel`, per-level and total — use it instead of summing `uw.stoneCost`), `uw.inner-land-mines`, `assist.stones`, `module.cost`, `bot.upgrade` (medals), `guardian.upgrade` (bits), `workshop.upgrade` (enhancements only), `dissonance.boost` (the multiplier from per-tier bests), `uptime.ratio` (UW duration ÷ cooldown), `damage.reduction`, `thorns.damage`, `economy.coins-per-kill`, `enemy.wave`, `drops.enemy`. |
 | `plan_effective_path` | `family*` (`damage` \| `economy` \| `health` \| `regen`), `variant*` (damage: `lab-time`, `lab-coins`, `stone`, `coin`, `keys`; economy: `time`, `coin`, `stone`; health: `lab-time`, `lab-coins`, `stone`, `coin`; regen: `lab-time`, `lab-coins`), `steps` (default 10, max 200), `savePath` (**economy only**), `levels` (object merged over all-zero) | Returns `steps[{step,name,level,cost,roi}]` and `excluded[{sheetName,reason}]`. See §7 on zero-start. |
 | `patch_notes` | **one** of `query`, `introduced`, `version`, `from`+`to`, `recent` per call (given two, it answers one and says which; a `from` later than `to` is refused); plus `limit` (default 5, max 25), `full` (boolean; bodies are cut at 600 chars without it) | With no argument: archive range and latest versions. Use to check whether advice predates a patch. |
@@ -163,11 +193,14 @@ fields}`; calculators with `calc_run {id, args}`.
 | Weekly mission track | `DAILY_MISSION_WEEKLY_REWARDS` | Gems, medals, stones, guild tokens per 5..35 missions. |
 | Milestone rewards and unlocks | `MILESTONE_REWARD_ROWS` (`where: {tier}`) | Standard and premium tracks, by wave. |
 | Tier coin bonus, tier battle conditions | `TIER_COIN_BONUS_ROWS`, `TIER_BATTLE_CONDITION_ROWS` (`where: {tier}`) | Conditions start at Tier 14. |
-| Vault v29 costs and values | `VAULT_V29_POWER`, `VAULT_V29_HARMONY`, `VAULT_V29_ENEMY` | Two rows each: `categories` (unlock costs) and the upgrades (per-level keys and values). The oracle has no vault numbers. |
+| Vault v29 key prices | `calc_run vault.v29.upgradeKeysCost {args: {upgrade, level}}`, `vault.v29.upgradeKeysBetween {args: {upgrade, fromLevel, toLevel}}`, `vault.v29.categoryUnlockKeys {args: {tree, category}}`, `vault.v29.treeKeysRemaining {args: {tree, levels}}` (SDK 2.1.0) | `upgrade` is the row key the save uses, `v29:<tree>:<Category>:<Name>` (`v29:harmony:Cards:Additional Card Slot` 0→2 = 15 keys; the Cards category unlock = 5). `tree` is `harmony`, `power` or `enemy`. Pass `readVaultFromSaveRoot.v29.levels` as `levels` unchanged for what is left of a tree; with no `levels` it is the whole tree (Power: 11,505 keys). The first upgrade in a locked category also costs its unlock. `null` = a misspelt key or a level the row does not have, not "free". **`vault.nodeKeysCost`, `vault.nodeKeysBetween` and `vault.treeKeysRemaining` (no `v29`) price the trees as they were before v29 — never use them for a current account.** |
+| Vault v29 values and requirements | `VAULT_V29_POWER`, `VAULT_V29_HARMONY`, `VAULT_V29_ENEMY`, or `chart_rows vault:v29:<tree>` | Two rows each: `categories` (unlock costs) and the upgrades (per-level keys and values). The oracle has no vault numbers. |
+| A run of levels, one call | `calc_run` `uw.stoneCostBetween {weapon, stat, fromLevel, toLevel}`, `uw.unlockStonesBetween {ownedFrom, ownedTo}`, `uw.plusUnlockStonesBetween`, `lab.coinCostBetween` / `lab.durationDaysBetween {labKey, fromLevel, toLevel, modifiers}`, `bot.statCostBetween {botLabel, statName, fromLevel, toLevel}` (medals), `guardian.statCostBetween {guardianKey, statName, fromLevel, toLevel}` and `guardian.allStatCost {guardianKey, fromLevels}` (bits), `module.coinCostBetween` / `module.shardCostBetween {fromLevel, toLevel, discountPercent}`, `assist.stoneCostBetween {fromLevel, toLevel}`, `workshop.coinCostBetween`, `workshop.enhancementCoinCostBetween {stat, fromLevel, toLevel, discounts}` (SDK 2.0.0) | `fromLevel` is the level owned now. Each returns `null`, never a partial total, for a level its table does not price, an unknown name or `toLevel` below `fromLevel` — check the name before concluding a level does not exist. Lab `modifiers` carry `coinDiscountLabLevel` and `labSpeedLabLevel` (the other keys are in `calc_describe`); the days are one slot with no relic or boost, and a Labs Speed run is summed at its own rising level. `uw.stoneCostBetween` leaves out the unlock. |
 | Bot costs and stat ladders | `BOT_UPGRADES_DATA` (`where: {name: "Golden Bot"}`), or `form_calc bot.upgrade` | Medal cost per level, stat base/step/max, lab caps, Bot+ ladder. |
 | Module merges and reroll costs | `MODULE_MERGE_RECIPES`; `calc_run data.getModuleRerollCost {args: {lockedSubstats}}` | Reroll shards per roll by number of locked substats. |
 | Spotlight coverage | `calc_run spotlight.coverage {args: {quantity, angleDegrees}}` | Share of the field lit, capped at 1. Once it saturates, more Angle is worth nothing. |
-| Base workshop coin price of one level | `calc_run mechanics.workshopStatValue {args: {stat, level}}` → `coinCost` (level − 1 → level) | Before the workshop discount labs. Returns `null` for Cash Bonus, Coins / Kill Bonus, Knockback Force, Land Mine Chance, Rend Armor Chance, Shockwave Frequency and Wall Rebuild; for those read the price in game. (`WORKSHOP_DATA` holds every level but each `find_rows` call on it returns a 6,000-name column list.) |
+| Workshop coin price, as the buy button shows it | `calc_run workshop.upgradePrice {args: {stat, fromLevel, count, sectionDiscountPercent}}` → `{toLevel, levels, coins}` (SDK 2.0.0) | `fromLevel` = the level owned, `count` = 1, 5, 10 or 100, `sectionDiscountPercent` = that tab's Workshop Discount lab as a percentage (lab level 30 is 15). Each level is discounted and rounded on its own, then summed, as the x5 / x10 / x100 buttons do; `levels` below `count` means the upgrade ran out. Damage 100→110 at 15% = 835,703. For a long run at list price: `workshop.coinCostBetween {stat, fromLevel, toLevel}`. All 48 upgrades are priced. |
+| What a workshop level gives | `calc_run workshop.statValue {args: {stat, level}}` → `{value, unit, coinCost, cashCost}` (SDK 2.0.0; `mechanics.workshopStatValue` before) | The game's value with its `unit` named (`amount`, `multiplier`, `fraction`, … — a `fraction` of 0.0055 is 0.55%), workshop alone — no lab, relic, card or module. `coinCost` is the list price of the **next** level (level → level + 1). `workshop.screenValue` builds the number the Workshop row shows from labs, relics, cards and modules, but wants a full input object: read `calc_describe` first. Knockback Force, Rend Armor and the Wall have no screen formula; read those in game. |
 
 Cautions:
 - Calculators marked `tier: "generated"` in `calc_list` (all 273 `save.*` handles and most `data.*` /
@@ -186,8 +219,10 @@ mechanics map and ledger under the server's directory). They exist for people ch
 
 ## 4. Save readers
 
-35 functions match `read*FromSaveRoot` in SDK 1.7.2 and `decode_save` runs 34 of them; the extra one,
-`readVaultV29ProgressFromSaveRoot`, returns the same data as `readVaultFromSaveRoot.v29`. (`decode_save`
+38 functions match `read*FromSaveRoot` in SDK 2.1.0 and `decode_save` runs all of them. Four are series
+views added in 2.0.0 — `readSaveSeriesFromSaveRoot`, `readBattleHistorySeriesFromSaveRoot`,
+`readTournamentSeriesFromSaveRoot`, `readTierRecordSeriesFromSaveRoot` — which hold no data the other 34
+do not; skip them in a full read and use `save_series` when a series is wanted. (`decode_save`
 lists whatever the installed build has — trust that list over this table.) Each returns an object or `null` when the save has no data for the
 feature; most carry `warnings: string[]` — a non-empty one usually means the save shape changed.
 
@@ -255,6 +290,13 @@ feature; most carry `warnings: string[]` — a non-empty one usually means the s
   computes it. Do not present it as the sustained rate.
 - **`average`**: text fields averaged across the runs the SDK could build reports for.
 
+- **Trend at a glance** (SDK 2.0.0): `save_series {series: "save:battle:coins-per-hour"}` returns every
+  run's coins per hour by date (30 points, one call; a run with no coins or no duration is left out and
+  reported). It mixes farming and tournament runs and names no tier, so use it to see the trend and to
+  spot outliers; the sustained rate still comes from the median over farming runs below.
+  `save:tournament:rank` and `save:tournament:wave` cover every tournament the save remembers (47 on one
+  real account, far more than the 30 runs), which is the quickest read of league progress.
+
 **Raw run record** (`detail: true`, or `read_save_field` with `extractor: "listImportableBattleRuns"`):
 148 columns: 146 numbers plus `battleDate` (string) and `isTournament` (boolean). Groups:
 
@@ -304,7 +346,8 @@ to re-look-up a detail you already read, but it does not replace the read below.
 1. `decode_save {}` (or with `path`) — the file it read, reader list, which are `found`, warning counts, run count.
 2. `run_extractor` for `readExportInfoFromSaveRoot` — check `exportedAt`, `checked`, `warnings`.
 3. `run_extractor` once per remaining reader with `found: true`, in parallel. Skip
-   `readProfileFromSaveRoot` (personal data). Themes, collected theme names and runtime controls can be
+   `readProfileFromSaveRoot` (personal data) and the four `read…SeriesFromSaveRoot` readers (the same
+   runs, tournaments and tier records again as points; §4). Themes, collected theme names and runtime controls can be
    skipped unless asked. Small results arrive whole.
    In the same batch: `next_unlocks {}` and `coin_bonus {}`.
 4. For every name in an answer's `outlined` (or a `truncated` list), page with `read_save_field`.
@@ -316,7 +359,8 @@ to re-look-up a detail you already read, but it does not replace the read below.
    - relics `relics` — `where: {"state": "unlocked"}`, `pick: ["index","name","stat","benefit"]`, `limit: 100`;
      pass the indices to `workshop.relicBenefitByStat` for per-stat totals (§3), and note `mailedCount`;
    - cards `presetSlots` — only if comparing presets.
-5. `battle_history {path, limit: 50}` — every run, compact, plus peak `coinsPerHour`.
+5. `battle_history {path, limit: 50}` — every run, compact, plus peak `coinsPerHour`. Optionally
+   `save_series {series: "save:tournament:rank"}` for placings over time.
 6. `read_save_field {extractor: "listImportableBattleRuns", path, limit: 30, pick: [...]}` for the numbers
    the compact row lacks. About ten columns of 30 runs fit one page; make one call for
    `battleDate, tier, wave, realTime, gameTime, coinsEarned, cellsEarned, rerollShardsEarned, killedBy,
@@ -332,7 +376,7 @@ Never conclude "the player has none" from a preview: check `outlined`, `truncate
 - **`null` is not zero.** A reader returning `null`, or a field that is `null`, means the save does not
   record it — not that the player has none.
 - **Newer game than the SDK.** `readExportInfoFromSaveRoot.checked: false`, or anything in its `warnings`
-  / `unknownKeys`, means the export is newer than the SDK was verified against (1.7.2: build 1301 =
+  / `unknownKeys`, means the export is newer than the SDK was verified against (2.1.0: build 1301 =
   v29.2.3, data version 35). Renamed fields then read as missing; tell the player and update the SDK.
   Rule out a stale build first (§1): an up-to-date checkout that was not rebuilt warns the same way.
 - **Module levels live on the slot since v29.** `readModulesFromSaveRoot.equipped[].level` is already the
@@ -389,9 +433,10 @@ Never conclude "the player has none" from a preview: check `outlined`, `truncate
   `{"purchases": {"hasStarterPack": true}}` — state pack what-ifs as facts, never as a push to buy.
 - `uw.stoneCost` / `uw.statValue` return `null` both for a wrong `weapon`/`stat` string and for a level with
   no price. Check the exact strings in `meta-ultimate-weapons.md` before concluding a level is unavailable.
-  `uw.stoneCost` prices one level; for a range use `form_calc uw.stones {weapon, stat, currentLevel,
+  `uw.stoneCost` prices one level; for a range use `calc_run uw.stoneCostBetween {weapon, stat,
+  fromLevel, toLevel}` (the total, SDK 2.0.0) or `form_calc uw.stones {weapon, stat, currentLevel,
   targetLevel}`, which lists each level and the total (Golden Tower Cooldown 0→3 = 10 + 28 + 46 = 84 in
-  both). Its `statsForWeapon` gives the exact stat strings. The next weapon unlock is
+  all three). Its `statsForWeapon` gives the exact stat strings. The next weapon unlock is
   `next_unlocks.ultimateWeapon.stones` (or `calc_run uw.nextUnlockStoneCost`), not `uw.stoneCost`.
 - `readLabsFromSaveRoot.labsUnlocked` counts only the slots bought with gems; the first slot is free, so
   slots owned = `labsUnlocked + 1`. `activeQueue` lists all five slots: a row with `active: false` whose

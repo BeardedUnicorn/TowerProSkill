@@ -1,11 +1,11 @@
 # Version pin and freshness protocol
 
 Verified against game version: **v29.2.3** (build 1301; patch note dated 2026-11-24)
-Reference files written: 2026-11-20, updated 2026-11-25
-Verified against SDK: `@beardedunicorn/thetowersdk` **1.7.2**
+Reference files written: 2026-11-20, updated 2026-11-26
+Verified against SDK: `@beardedunicorn/thetowersdk` **2.1.0**
 
 Main sources
-- SDK knowledge base (`TheTowerSDK`): `facts/v29.0.0`, `facts/v29.2.0`, `facts/v29.2.1`, `facts/v29.2.2` (286 on-screen readings of the live game, 2026-11-24, and the Milestones screen for tiers 1–15), compartments, and the patch-note archive (261 notes, 2021-07-15 to 2026-11-24, ingested from the official announcement channel). SDK 1.7.2 checked a build-1301 export (2026-11-25) field by field and re-read the vault, card, daily-mission and bot tables from that build; no screen was re-read, so the newest on-screen check is still the v29.2.2 one.
+- SDK knowledge base (`TheTowerSDK`): `facts/v29.0.0`, `facts/v29.2.0`, `facts/v29.2.1`, `facts/v29.2.2` (286 on-screen readings of the live game, 2026-11-24, and the Milestones screen for tiers 1–15), compartments, and the patch-note archive (261 notes, 2021-07-15 to 2026-11-24, ingested from the official announcement channel). SDK 1.7.2 checked a build-1301 export (2026-11-25) field by field and re-read the vault, card, daily-mission and bot tables from that build; SDK 2.0.0 added `facts/v29.2.3`: 60 Workshop prices read on screen on build 1301 at x1, x5, x10 and x100, and a second Workshop preset's displayed values. Those are the newest on-screen checks; every other screen was last read on v29.2.2.
 - techtreegames.com blog: v29.2 preview (Nov 13), v29.2.1 notes (Nov 19), Tower Tea Oct 26, Nov 9 and Nov 23, 2026, 2026 Black Friday sale post (Nov 23).
 - Store listings read 2026-11-25: Google Play (version 29.2.3, updated Nov 23) and the App Store version history (29.2.3, Nov 24).
 - Community strategy re-read 2026-11-24: towerstats.org guides (pages updated 18–19 Nov 2026), tower-hub.com (pages verified Jul–Nov 2026), and one Legend player's notes (hiro29 on note.com, Aug–Sep 2026; single author). Re-checked 2026-11-25: no new towerstats posts after Nov 21, and tower-hub's relic tier list had not yet rated the Howling Wolf event.
@@ -83,7 +83,7 @@ Community strategy lags the game. At the pin, almost no published guide covers v
 - Fixed new players (and players returning after a very long absence) being shown the login screen instead of starting their first game. The note says it should not affect existing players. No balance change. `[mechanic]`
 - A build-1301 export has the same 456 fields at data version 35 as build 1296, and every save reader returns as before (SDK 1.7.2).
 
-### Corrections from reading the live game (SDK 1.3.0–1.7.1, 2026-11-24)
+### Corrections from reading the live game (SDK 1.3.0–2.1.0, 2026-11-24 to 2026-11-26)
 These are not game changes. They are things earlier SDK data, the wiki or guides had wrong, now checked on screen. `[mechanic]`
 - The Battle tab's **Total Coin Bonus** includes the selected tier's coin bonus and every row multiplies. Read it with `coin_bonus`.
 - Songs and profile banners pay a coin bonus (+0.6% each), like themes.
@@ -93,7 +93,13 @@ These are not game changes. They are things earlier SDK data, the wiki or guides
 - Milestone lab unlocks: the wiki listed six labs at milestones the game does not gate them at, and used placeholder names. The gates quoted in these files were re-checked against the corrected table on 2026-11-24 and all match.
 - The relics an event shop sells are not the relics the event awards. An event gives four relics of its own at 350 / 700 medals earned (550 / 1,100 with the event pass); its shop sells older relics from a past event for 200 (Rare) or 500 (Epic) medals. An event that returns brings new relics. Read both lists from `readEventShopFromSaveRoot` (`earnTrack`, `relics`).
 - A card that is maxed leaves the draw pool; six cards cannot be drawn until their milestone is claimed.
-- Still unexplained by the SDK (do not compute these, read them in game): Chain Lightning Quantity, Spotlight Bonus and Knockback Force as displayed.
+- The Workshop buy multiplier (x5, x10, x100) prices each level on its own, with the tab's discount applied and rounded, then adds them. Discounting the total once is a coin or more out. `workshop.upgradePrice` does it the game's way (SDK 2.0.0).
+- The Workshop row shows the current value at every multiplier, never the value after buying.
+- Enemy Attack and Enemy Health Level Skip give 0.05% a level in the Workshop, not 0.5% (the SDK read its own table ten times too high before 2.0.0).
+- The Free Upgrades card adds its points to the Workshop's free-upgrade chances before relics multiply them.
+- Displayed Health Regen is table × lab × (1 + relics) × (1 + Armor Health Regen substat); displayed Defense Absolute is table × lab × (1 + relics).
+- The pre-v29 Vault trees still have calculators and charts in the SDK, labelled pre-v29 since 2.1.0. The current Vault is priced by `vault.v29.*`.
+- Still unexplained by the SDK (do not compute these, read them in game): Chain Lightning Quantity, Spotlight Bonus, and the Workshop's displayed Knockback Force, Rend Armor and Wall rows.
 
 ## 3. Things older guides get wrong after v29
 

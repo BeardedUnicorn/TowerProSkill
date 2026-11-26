@@ -257,7 +257,7 @@ Slot rule: buy a slot only when a card that would help the current build is wait
 
 ## 10. Tools instead of tables
 
-- Module main effect at a rarity and level: `calc_run` → `module.stat`; caps: `module.levelCapForRarity`.
+- Module main effect at a rarity and level: `calc_run` → `module.stat`; caps: `module.levelCapForRarity`. Slot levelling cost for a run of levels: `module.coinCostBetween` and `module.shardCostBetween` `{fromLevel, toLevel, discountPercent}` (pass the discount as an argument, never apply it afterwards); assist upgrades: `assist.stoneCostBetween {fromLevel, toLevel}` (SDK 2.0.0).
 - Assist contribution: `assist.substatCap`.
 - Stone prices for UW stats when weighing assists and masteries against them: `uw.stoneCost`, `uw.statValue`.
 - Any single entity (a module, a mastery, a lab): `oracle_get`; names: `oracle_search`.

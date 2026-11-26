@@ -400,7 +400,12 @@ def latest_pair(folder):
     folder = os.path.expanduser(folder)
     if not os.path.isdir(folder):
         sys.exit('diff_snapshots: no snapshot folder at %s. Take a snapshot with snapshot.mjs first.' % folder)
-    files = snapshots_in(folder)
+    try:
+        files = snapshots_in(folder)
+    except OSError as error:
+        sys.exit('diff_snapshots: cannot read the snapshot folder %s: %s. Snapshots saved there cannot be seen '
+                 'from this session; pass --dir <the folder snapshot.mjs wrote to with --out>.'
+                 % (folder, error.strerror or error))
     notes = []
     if not files:
         players = [os.path.join(folder, name) for name in sorted(os.listdir(folder)) if os.path.isdir(os.path.join(folder, name))]

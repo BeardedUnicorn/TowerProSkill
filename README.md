@@ -53,10 +53,14 @@ distinction in its advice.
 
 ### 1. Install the TheTowerSDK MCP server
 
-Version 1.5.0 or later is needed for unlock pricing and the coin-bonus breakdown.
+Version 1.5.0 or later is needed for unlock pricing and the coin-bonus breakdown. The skill is checked
+against 2.1.0, which adds range pricing (a run of levels in one call), Vault key prices for the current
+Vault and the save's history as series; older servers still work with less.
 
 **Claude desktop app:** download `thetowersdk.mcpb` from the SDK's
 [latest release](https://github.com/BeardedUnicorn/TheTowerSDK/releases/latest) and open it. Nothing to build.
+Its settings are optional: on a Mac leave **Tool Export** empty and the server finds the game's export;
+on Windows and Linux point it at your `tool_export.json`.
 
 **From source:**
 

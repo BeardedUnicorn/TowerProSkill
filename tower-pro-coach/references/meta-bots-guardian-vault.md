@@ -71,7 +71,7 @@ Adjustments for the current game `[consensus]`
 | Flame Bot | Damage Reduction, Cooldown, Damage, Range | Burns; the only bot with Damage Reduction. Fixed 3 s duration, base cooldown 75 s. |
 | Bot Bot (v28) | Duration, Cooldown, Bonus, Range | Amplifies the other bots' effects inside its radius. |
 
-- Bought and levelled with medals. Unlock price depends on how many bots you already own (positional ladder in the SDK table `BOT_BASE_UNLOCK_COSTS`, read by `calc_run data.getBotUnlockCost {args: {unlockedBotCount}}`; confirm one price on screen before quoting, since that calculator is generated, not curated). Level costs and stat ladders per bot: `BOT_UPGRADES_DATA` or `form_calc bot.upgrade`.
+- Bought and levelled with medals. Unlock price depends on how many bots you already own (positional ladder in the SDK table `BOT_BASE_UNLOCK_COSTS`, read by `calc_run data.getBotUnlockCost {args: {unlockedBotCount}}`; confirm one price on screen before quoting, since that calculator is generated, not curated). Level costs and stat ladders per bot: `BOT_UPGRADES_DATA` or `form_calc bot.upgrade`; medals for a run of levels in one call: `calc_run bot.statCostBetween {args: {botLabel, statName, fromLevel, toLevel}}` (SDK 2.0.0; `null` past the stat's cap, not a clamped total).
 - Level cost: 100 medals for the first level of a stat, +40 for each level after. Each stat has its own maximum: Cooldown 15 on every bot; Duration and Bonus 30 on Golden and Amplify; Range 15–20 by bot; Bot Bot Bonus 19; Flame Bot Damage 30. Never assume one "bot level".
 - Tower range amplifies bot range. Relics and the Vault add more.
 - Bots can be switched off individually.
@@ -221,16 +221,16 @@ Which first `[consensus, thin]`: Bonus Cells for lab speed if cells are the bott
 - Later card slots (40/60/80 keys) and the 50-key toggles are Endgame.
 - Presets from the Vault only add to presets the Presets lab already opened; research the lab first.
 - towerstats' Vault page (19 Nov 2026) names the same openers: the extra card slots (215 keys for all six, and the only way past 22 slots), Auto Restart (20) and Smart Demon Mode / Smart Nuke (25 each).
-- Because the first respec is free and later ones are not confirmed, plan the first 100 keys before spending. Compare options with the SDK tables `VAULT_V29_POWER`, `VAULT_V29_HARMONY` and `VAULT_V29_ENEMY` (category unlock costs, then per-level keys and values); the oracle has no Vault numbers.
+- Because the first respec is free and later ones are not confirmed, plan the first 100 keys before spending. Price options with `calc_run` `vault.v29.categoryUnlockKeys`, `vault.v29.upgradeKeysBetween` and `vault.v29.treeKeysRemaining` (SDK 2.1.0; pass the save's `v29.levels` to see what a tree still costs) and read values from the tables `VAULT_V29_POWER`, `VAULT_V29_HARMONY` and `VAULT_V29_ENEMY`; the oracle has no Vault numbers. The first upgrade in a locked category costs the category unlock as well.
 
 Ranks 16–24 in Legend earn one key per tournament, about two a week. At that rate the Vault is slow; say so, and tie Vault plans to the player's realistic rank.
 
 ## 10. Tools
 
 - Bot stat ceilings and names: `calc_run` `bot.statMaxLevel`, `bot.statNames`, `bot.findByName`.
-- Guardian tracks and bounds: `guardian.definitions`, `guardian.statBounds`.
+- Guardian tracks and bounds: `guardian.definitions`, `guardian.statBounds`. Bits for a run of levels: `guardian.statCostBetween {guardianKey, statName, fromLevel, toLevel}`; bits to finish a chip from its current levels: `guardian.allStatCost {guardianKey, fromLevels}` (SDK 2.0.0).
 - Relics an event awards, by event name: `calc_run` `event.relicSet` `{name}`. The set spans every run of that event; a single event awards one edition only, so for the running event read `earnTrack` instead.
-- Vault upgrade costs and values: `VAULT_V29_POWER` / `VAULT_V29_HARMONY` / `VAULT_V29_ENEMY` via `find_rows`. Relic catalog: `RELIC_GAME_TABLE`; relics per event with stat, benefit, medal threshold, pass flag and later shop prices: `EVENT_RELIC_SETS`. Theme catalog: `THEME_CATALOG`.
+- Vault key prices: `calc_run` `vault.v29.upgradeKeysCost`, `vault.v29.upgradeKeysBetween`, `vault.v29.categoryUnlockKeys`, `vault.v29.treeKeysRemaining` (arguments in `data-access.md` § "Tables and calculators worth knowing"). **Not** `vault.nodeKeysCost`, `vault.nodeKeysBetween` or `vault.treeKeysRemaining`: those price the pre-v29 trees. Values and requirements: `VAULT_V29_POWER` / `VAULT_V29_HARMONY` / `VAULT_V29_ENEMY` via `find_rows`, or `chart_rows vault:v29:<tree>`. Relic catalog: `RELIC_GAME_TABLE`; relics per event with stat, benefit, medal threshold, pass flag and later shop prices: `EVENT_RELIC_SETS`. Theme catalog: `THEME_CATALOG`.
 - What the account owns (bots, chips, relics, themes, keys, medals, bits): the save readers (`run_extractor` / `read_save_field`, see `data-access.md`).
 - UW cooldowns for sync targets: `uw.statValue` with stat "Cooldown".
 - Irreversibility check before any cooldown advice: `oracle_footguns`.

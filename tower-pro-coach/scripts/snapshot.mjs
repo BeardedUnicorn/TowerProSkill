@@ -3,12 +3,16 @@
  * snapshot.mjs — freeze one tool_export.json into a single JSON file the coach can diff later.
  *
  * Usage
- *   node snapshot.mjs --export <path/to/tool_export.json> [--sdk <path>] [--out <dir>]
+ *   node snapshot.mjs [--export <path/to/tool_export.json>] [--sdk <path>] [--out <dir>]
  *   node snapshot.mjs --list [--export <path/to/tool_export.json>] [--sdk <path>] [--out <dir>]
  *
+ * --export  The export to freeze. Without it: env TOWER_TOOL_EXPORT, then the TOWER_TOOL_EXPORT an
+ *           MCP config gives the Tower server, then wherever the SDK finds the game's export.
  * --sdk   A TheTowerSDK checkout (built: it needs dist/) or an installed
  *         @beardedunicorn/thetowersdk package directory. Falls back to env TOWER_SDK_PATH,
- *         then to resolving the package by name.
+ *         then to resolving the package by name, then to the checkout an MCP config starts the
+ *         Tower server from (.mcp.json beside the skill or in the working directory, ~/.claude.json,
+ *         the Claude desktop config).
  * --out   Snapshot root. Default: ~/.tower-coach/snapshots
  * --list  List existing snapshots. With --export: for that player. Without: every player key.
  *
@@ -56,10 +60,13 @@ function parseArgs(argv) {
 }
 
 const HELP = `Usage:
-  node snapshot.mjs --export <tool_export.json> [--sdk <TheTowerSDK path>] [--out <dir>]
+  node snapshot.mjs [--export <tool_export.json>] [--sdk <TheTowerSDK path>] [--out <dir>]
   node snapshot.mjs --list [--export <tool_export.json>] [--out <dir>]
 
-SDK location, first that works: --sdk, env TOWER_SDK_PATH, the installed ${PACKAGE} package.
+SDK location, first that works: --sdk, env TOWER_SDK_PATH, the installed ${PACKAGE} package,
+the checkout an MCP config starts the Tower server from.
+Export, first that works: --export, env TOWER_TOOL_EXPORT, the TOWER_TOOL_EXPORT in that MCP config,
+the game's own folder (as the SDK finds it).
 Default --out is ~/.tower-coach/snapshots.`
 
 const expandHome = given => (/^~(?=$|[\\/])/.test(given) ? path.join(os.homedir(), given.slice(1)) : given)
@@ -78,6 +85,45 @@ function distUnder(given) {
   ]
   return candidates.find(dir =>
     fs.existsSync(path.join(dir, 'save', 'index.js')) && fs.existsSync(path.join(dir, 'node', 'index.js'))) ?? null
+}
+
+/**
+ * What the MCP configs on this machine say about the Tower server: the checkouts it is started
+ * from (an argument ending in mcp/server.mjs) and the export it is pointed at. A coach that reads
+ * the save through the server has both, but only the config knows where they are on disk.
+ */
+function mcpConfigHints() {
+  const here = path.dirname(fileURLToPath(import.meta.url))
+  const files = [
+    path.join(here, '..', '.mcp.json'),
+    path.join(here, '..', '..', '.mcp.json'),
+    path.join(process.cwd(), '.mcp.json'),
+    path.join(os.homedir(), '.claude.json'),
+    path.join(os.homedir(), 'Library', 'Application Support', 'Claude', 'claude_desktop_config.json'),
+    path.join(os.homedir(), 'AppData', 'Roaming', 'Claude', 'claude_desktop_config.json'),
+    path.join(os.homedir(), '.config', 'Claude', 'claude_desktop_config.json'),
+  ]
+  const sdkRoots = []
+  const exports = []
+  const walk = (value, file, depth) => {
+    if (depth > 8 || value === null || typeof value !== 'object') return
+    if (Array.isArray(value.args)) {
+      const server = value.args.find(arg => typeof arg === 'string' && /[\\/]mcp[\\/]server\.mjs$/.test(arg))
+      if (server) {
+        sdkRoots.push({ root: path.dirname(path.dirname(path.resolve(expandHome(server)))), file })
+        const named = value.env?.TOWER_TOOL_EXPORT
+        if (typeof named === 'string' && named.trim()) exports.push({ path: named.trim(), file })
+      }
+    }
+    for (const child of Object.values(value)) walk(child, file, depth + 1)
+  }
+  for (const file of [...new Set(files.map(candidate => path.resolve(candidate)))]) {
+    try {
+      walk(JSON.parse(fs.readFileSync(file, 'utf8')), file, 0)
+    }
+    catch { /* absent, unreadable or not JSON: not a source */ }
+  }
+  return { sdkRoots, exports }
 }
 
 function versionNear(dist) {
@@ -130,6 +176,12 @@ async function loadSdk(sdkArg) {
   }
   catch {
     tried.push(`import('${PACKAGE}'): not installed where this script or the working directory can resolve it`)
+  }
+
+  for (const { root, file } of mcpConfigHints().sdkRoots) {
+    const dist = distUnder(root)
+    if (dist) return loadFromDist(dist, `MCP config ${file}`)
+    tried.push(`${root} (the Tower server in ${file}): no built dist/ there`)
   }
 
   fail(
@@ -285,16 +337,39 @@ async function main() {
     for (const player of players) printList(path.join(outRoot, player.name), `player ${player.name}`)
     return
   }
-  if (!args.export) fail(`--export <path/to/tool_export.json> is required.\n${HELP}`)
-
   const sdk = await loadSdk(args.sdk)
-  const exportPath = path.resolve(expandHome(args.export))
+  let exportGiven = args.export
+  if (!exportGiven) {
+    const configured = mcpConfigHints().exports.find(found => fs.existsSync(expandHome(found.path)))
+    const found = process.env.TOWER_TOOL_EXPORT?.trim()
+      || configured?.path
+      || (typeof sdk.node.findToolExport === 'function' ? sdk.node.findToolExport().path : null)
+    if (!found) fail(`no export found. Pass --export <path/to/tool_export.json>.\n${HELP}`)
+    exportGiven = found
+    process.stdout.write(`export: ${found}\n`)
+  }
+  const exportPath = path.resolve(expandHome(exportGiven))
   const { parsedRoot } = await decodeExport(sdk, exportPath)
 
   const { playerId, userName } = playerIdentity(parsedRoot)
   if (!playerId) fail('the export carries no player ID, so its snapshots cannot be kept apart from another account\'s.')
   const playerKey = playerKeyOf(playerId)
   const playerDir = path.join(outRoot, playerKey)
+
+  // An agent's sandbox may hide the home folder. Say so in words, before any work is done, with
+  // the way round it: a traceback here reads as "the script is broken", and it is not.
+  try {
+    if (fs.existsSync(outRoot)) fs.readdirSync(outRoot)
+    if (!args.list) fs.mkdirSync(playerDir, { recursive: true })
+  }
+  catch (error) {
+    fail(
+      `cannot ${args.list ? 'read' : 'write'} the snapshot folder ${outRoot}: ${error?.code ?? error?.message ?? error}.\n`
+      + 'Snapshots already saved there cannot be seen from this session.\n'
+      + 'Pass --out <a folder this session can write>, for example --out ./tower-coach-snapshots, '
+      + 'and give the same folder to diff_snapshots.py as --dir.',
+    )
+  }
 
   if (args.list) {
     printList(playerDir, `player ${playerKey}`)
