@@ -54,8 +54,9 @@ distinction in its advice.
 ### 1. Install the TheTowerSDK MCP server
 
 Version 1.5.0 or later is needed for unlock pricing and the coin-bonus breakdown. The skill is checked
-against 3.0.0, which adds the spending plan (income the account sustains, what the next coins should buy
-and when, a lab schedule, a boost budget) and a survival ranking fitted to your own runs, on top of
+against 3.1.0, which prices in-run upgrades in cash, on top of 3.0.0's spending plan (income the account
+sustains, what the next coins should buy and when, a lab schedule, a boost budget) and survival ranking
+fitted to your own runs, and
 2.1.0's range pricing, current Vault key prices and history series; older servers still work with less.
 
 **Claude desktop app:** download `thetowersdk.mcpb` from the SDK's

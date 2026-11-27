@@ -2,7 +2,7 @@
 name: tower-pro-coach
 description: Coaches a player's account in The Tower – Idle Tower Defense from their own game export. Use when the user asks to be coached in The Tower, shares or mentions a tool_export.json or game export, asks "review my account", "what should I do next", where to spend stones, gems, coins, medals, keys or cells, which UW, lab, card, module, bot or relic to get next, how to farm more coins or cells, push tiers, climb tournament leagues or use the current event, or asks any progression question in the game's own terms (GT, BH, DW, perma, sync, devo, eHP, Legends, dissonance) even if the game is not named. Reads the export through the BeardedUnicorn/TheTowerSDK MCP server, covers the whole account (workshop, labs, cards, modules, ultimate weapons, bots, guardian, vault, relics, events, currencies, tournaments, last 30 runs), prices every recommendation with the SDK's calculators, ranks the highest-value next steps, flags permanent choices and tracks progress between sessions.
 license: MIT
-compatibility: Requires the BeardedUnicorn/TheTowerSDK MCP server, version 1.5.0 or later (tools such as decode_save, run_extractor, read_save_field, battle_history, next_unlocks, coin_bonus, calc_run, oracle_footguns); 1.7.1 or later for event relic advice; 1.7.2 or later reads v29.2.3 exports as checked; 2.1.0 or later for the range and Vault key calculators and save_series; 3.0.0 or later (the version this skill is checked against) for plan_spending, survival_rank and scenario what-ifs. Node 22+ for the optional snapshot script, Python 3 for the snapshot diff.
+compatibility: Requires the BeardedUnicorn/TheTowerSDK MCP server, version 1.5.0 or later (tools such as decode_save, run_extractor, read_save_field, battle_history, next_unlocks, coin_bonus, calc_run, oracle_footguns); 1.7.1 or later for event relic advice; 1.7.2 or later reads v29.2.3 exports as checked; 2.1.0 or later for the range and Vault key calculators and save_series; 3.0.0 or later for plan_spending, survival_rank and scenario what-ifs; 3.1.0 or later (the version this skill is checked against) for in-run cash prices. Node 22+ for the optional snapshot script, Python 3 for the snapshot diff.
 ---
 
 # Tower Pro Coach
@@ -47,7 +47,9 @@ than 1296", the server was updated but not rebuilt or not restarted — see `ref
 `vault.v29.*` key calculators and `save_series`, and names four workshop calculators differently; the same
 section says what to use instead. A server older than 3.0.0 has no `plan_spending` or `survival_rank` and
 no `scenarios` on `coin_bonus` / `plan_effective_path`: work out income, uptime and the lab queue by hand
-(`references/account-assessment.md` § 4) and tell the player the update adds the spending plan.
+(`references/account-assessment.md` § 4) and tell the player the update adds the spending plan. A server
+older than 3.1.0 has no `workshop.cashCostBetween`: sum `workshop.statValue` `cashCost` level by level for
+a short run of in-run levels, or say the cash price needs the update.
 
 Tool arguments are checked strictly: a misspelt or misplaced argument is refused, not ignored. The export
 is `path` on the save tools (`plan_spending` and `survival_rank` included) and `savePath` on `calc_run`
@@ -190,8 +192,8 @@ Then put numbers on the candidates:
   zone; `boostPolicy` is a boost per slot that cell income sustains (it uses wiki prices unless you pass
   `boostPrices` read on the Labs screen, and says so); `dissonance.rows` is what a Dissonant run is
   worth by the wave it reaches, which is the player's estimate to make. Its `warnings` and `notes` say
-  what the models leave out. It never covers gems, stones, medals, keys or purchases: rank those as
-  below.
+  what the models leave out. It never covers gems, stones, medals, keys, purchases or in-run cash: rank
+  those as below.
 - **Survival upgrades** are ranked by `survival_rank {candidates: [{stat, toLevel}], snapshotsDir}`:
   waves gained per billion coins, from a model fitted to this account's own runs. Use it when the
   bottleneck is survival, or to test a specific workshop buy. `toLevel` is the level to reach, not levels
@@ -212,6 +214,15 @@ Then put numbers on the candidates:
   the player can't afford for three months is a savings goal, and you can only tell which it is by
   pricing it against their income: the `buyList` dates, or price ÷ `forecast.coinsPerDay.median`, not
   `mechanics.coinFarmDays` (it assumes 23 hours of runs a day).
+- **In-run upgrades cost cash, not coins**, and no coin calculator prices them. When the advice is about
+  what to buy during a run (an active run, a tournament, "what do I level first in-run", how much cash a
+  target takes), price it with `calc_run workshop.cashCostBetween {args: {stat, fromLevel, toLevel}}`.
+  `fromLevel` is the level the stat stands at **in the run**, not the number of levels bought: a run
+  starts each stat at its Workshop level, so with no run in progress use the Workshop level, and for the
+  run in progress use `inRun` from `readInRunLevelsFromSaveRoot`. Quote the answer as cash and never set
+  it beside a coin price. It is the game's base cash price: the Workshop discount labs do not apply, and
+  whether anything else lowers a cash price is not verified, so say "about" when it matters. Free
+  upgrades land some of those levels without cash, so it is the most the levels can cost.
 - **Game tables** answer the rest without guessing — stones per league and rank
   (`TOURNAMENT_REWARD_ROWS`), what an event's relics do (`EVENT_RELIC_SETS`), Vault key prices
   (`vault.v29.*` calculators, which take the save's own vault levels; the `vault.*` handles without

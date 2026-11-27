@@ -2,7 +2,7 @@
 
 Verified against game version: **v29.2.3** (build 1301; patch note dated 2026-11-24)
 Reference files written: 2026-11-20, updated 2026-11-26
-Verified against SDK: `@beardedunicorn/thetowersdk` **3.0.0**
+Verified against SDK: `@beardedunicorn/thetowersdk` **3.1.0**
 
 Main sources
 - SDK knowledge base (`TheTowerSDK`): `facts/v29.0.0`, `facts/v29.2.0`, `facts/v29.2.1`, `facts/v29.2.2` (286 on-screen readings of the live game, 2026-11-24, and the Milestones screen for tiers 1–15), compartments, and the patch-note archive (261 notes, 2021-07-15 to 2026-11-24, ingested from the official announcement channel). SDK 1.7.2 checked a build-1301 export (2026-11-25) field by field and re-read the vault, card, daily-mission and bot tables from that build; SDK 2.0.0 added `facts/v29.2.3`: 60 Workshop prices read on screen on build 1301 at x1, x5, x10 and x100, and a second Workshop preset's displayed values. Those are the newest on-screen checks; every other screen was last read on v29.2.2.
