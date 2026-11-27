@@ -2,7 +2,7 @@
 name: tower-pro-coach
 description: Coaches a player's account in The Tower – Idle Tower Defense from their own game export. Use when the user asks to be coached in The Tower, shares or mentions a tool_export.json or game export, asks "review my account", "what should I do next", where to spend stones, gems, coins, medals, keys or cells, which UW, lab, card, module, bot or relic to get next, how to farm more coins or cells, push tiers, climb tournament leagues or use the current event, or asks any progression question in the game's own terms (GT, BH, DW, perma, sync, devo, eHP, Legends, dissonance) even if the game is not named. Reads the export through the BeardedUnicorn/TheTowerSDK MCP server, covers the whole account (workshop, labs, cards, modules, ultimate weapons, bots, guardian, vault, relics, events, currencies, tournaments, last 30 runs), prices every recommendation with the SDK's calculators, ranks the highest-value next steps, flags permanent choices and tracks progress between sessions.
 license: MIT
-compatibility: Requires the BeardedUnicorn/TheTowerSDK MCP server, version 1.5.0 or later (tools such as decode_save, run_extractor, read_save_field, battle_history, next_unlocks, coin_bonus, calc_run, oracle_footguns); 1.7.1 or later for event relic advice; 1.7.2 or later reads v29.2.3 exports as checked; 2.1.0 or later (the version this skill is checked against) for the range and Vault key calculators and save_series. Node 22+ for the optional snapshot script, Python 3 for the snapshot diff.
+compatibility: Requires the BeardedUnicorn/TheTowerSDK MCP server, version 1.5.0 or later (tools such as decode_save, run_extractor, read_save_field, battle_history, next_unlocks, coin_bonus, calc_run, oracle_footguns); 1.7.1 or later for event relic advice; 1.7.2 or later reads v29.2.3 exports as checked; 2.1.0 or later for the range and Vault key calculators and save_series; 3.0.0 or later (the version this skill is checked against) for plan_spending, survival_rank and scenario what-ifs. Node 22+ for the optional snapshot script, Python 3 for the snapshot diff.
 ---
 
 # Tower Pro Coach
@@ -45,10 +45,13 @@ those two tools answer without prices, or a v29.2.3 export (build 1301) reads `c
 than 1296", the server was updated but not rebuilt or not restarted — see `references/data-access.md`
 § preflight, "Stale build". A server older than 2.1.0 lacks the `…Between` range calculators, the
 `vault.v29.*` key calculators and `save_series`, and names four workshop calculators differently; the same
-section says what to use instead.
+section says what to use instead. A server older than 3.0.0 has no `plan_spending` or `survival_rank` and
+no `scenarios` on `coin_bonus` / `plan_effective_path`: work out income, uptime and the lab queue by hand
+(`references/account-assessment.md` § 4) and tell the player the update adds the spending plan.
 
 Tool arguments are checked strictly: a misspelt or misplaced argument is refused, not ignored. The export
-is `path` on the save tools and `savePath` on `calc_run` and `plan_effective_path`.
+is `path` on the save tools (`plan_spending` and `survival_rank` included) and `savePath` on `calc_run`
+and `plan_effective_path`.
 
 ## Step 1 — Find the export
 
@@ -78,10 +81,11 @@ answering "which UW next?" without noticing the player has 4,000 unspent stones,
 farm run that dies to the same enemy every time. If a reader fails or returns nothing, note it as a gap in
 the report instead of silently skipping it.
 
-Batch independent tool calls in parallel where your environment allows — a full read is roughly 34
+Batch independent tool calls in parallel where your environment allows — a full read is roughly 37
 readers. Leave out `readProfileFromSaveRoot`: it returns the player's user name and nothing a coach needs.
 Leave out the four `read…SeriesFromSaveRoot` readers too: they repeat the runs, tournaments and tier
-records as chart points (`save_series` serves them when a trend is wanted).
+records as chart points (`save_series` serves them when a trend is wanted). `references/data-access.md`
+§ 4 names the few other readers that only repeat data or need arguments.
 A narrow question still gets the full `decode_save` overview and every reader that could bear on it (for a
 stone question: currencies, ultimate weapons, cards, bots, tournaments, labs, runs); skim the rest.
 
@@ -93,6 +97,8 @@ would have asked had they known.
 
 Run the bundled script to keep history (it stores reader output locally, keyed by a hash of the player ID).
 This records what you read for next time; it is not a substitute for reading through the MCP in Step 2.
+Run it before the planning tools in Steps 4 and 5: the folder it writes is their `snapshotsDir`, and
+each stored reading lets them fit a past run with the account as it was that day.
 
 ```bash
 node <skill>/scripts/snapshot.mjs --export <path/to/tool_export.json> --sdk <path/to/TheTowerSDK>
@@ -114,7 +120,9 @@ to compare against yet, and that this one is saved for next time. What the expor
 export and not from a comparison.
 
 Snapshots live in `~/.tower-coach/snapshots/<playerKey>/`, next to an `advice-log.md` of what you
-recommended in earlier sessions. If a previous snapshot exists, the diff tells you what the player actually
+recommended in earlier sessions. The script prints the key (`snapshot ok: player <playerKey>`) and the
+file it wrote; that player folder, not its parent, is what `plan_spending` and `survival_rank` take as
+`snapshotsDir`. If a previous snapshot exists, the diff tells you what the player actually
 did since last time — open with that ("since the 12th you finished three labs and took GT cooldown down
 two levels") and check your earlier advice against it: what they followed, what they skipped, and whether
 the numbers moved the way you predicted. On a first session the diff exits saying there is only one snapshot — that is expected, not
@@ -124,14 +132,21 @@ error message says what is missing.
 
 ## Step 4 — Assess the account
 
-Read `references/account-assessment.md` and work through it. Establish, with numbers:
+Read `references/account-assessment.md` and work through it. Call `plan_spending` once now (Step 5 says
+how); its `forecast` answers the uptime and income lines below. Establish, with numbers:
 
 - **Stage** — where the account sits on the progression ladder, and what matters most at that stage.
 - **Uptime** — what share of the clock the tower is in a run, and runs per day. Daily income is rate ×
-  time running; idle hours are frequently the biggest loss on the account.
+  time running; idle hours are frequently the biggest loss on the account. `forecast.uptime` gives hours
+  a day over the last day, the last week and the whole window; `forecast.pausedRuns` names runs that sat
+  paused.
 - **Economy** — farming tier, median coins/hour and cells/hour over recent runs (median, not best — plan
   on what reliably happens), run length, where the coins come from, and the Total Coin Bonus rows from
-  `coin_bonus` (a row at x1 is a lever not yet pulled).
+  `coin_bonus` (a row at x1 is a lever not yet pulled). `forecast` has the median rates with a 25th–75th
+  percentile band and coins and cells per day at the hours really run. It uses only full farm runs since
+  income last changed (`regimeBreaks`: a pack, a coin-bonus step), so read `runsUsed` and
+  `forecast.warnings`: a band built on one or two runs is narrow by accident. Say so, and check it
+  against the median of the run list.
 - **How runs end** — killed by what, at what wave, and whether that is the same every run.
 - **Damage mix** — which sources carry the kills; a build that looks like one archetype on paper but gets
   its kills elsewhere is a finding.
@@ -163,6 +178,26 @@ Load only the meta references the diagnosis points to:
 
 Then put numbers on the candidates:
 
+- **The spending plan** comes from `plan_spending {path, snapshotsDir, timeZone}`: one call, up to a
+  minute (`survival: false` answers in seconds and leaves workshop levels unranked). It ranks labs by
+  coins per day gained per slot-hour (`labQueue`) and everything else by gain per coin (`coinQueue`), and
+  never merges the two, because labs cost slot time and the rest costs coins. Read it, do not copy it:
+  the first lab row can be one that pays back in years, so check `paybackDays`, `totalCoins` and `gates`
+  (what must be bought or researched first) on every row you recommend, treat rows that name each other
+  in `overlaps` as a tie, and carry `notRanked` (each with its reason) into the report's gaps.
+  `buyList.items[].affordableAt` dates each purchase (early / likely / late) from the coins on hand;
+  `labSchedule.rows` plays the slots forward with the coins needed at each start, in the player's time
+  zone; `boostPolicy` is a boost per slot that cell income sustains (it uses wiki prices unless you pass
+  `boostPrices` read on the Labs screen, and says so); `dissonance.rows` is what a Dissonant run is
+  worth by the wave it reaches, which is the player's estimate to make. Its `warnings` and `notes` say
+  what the models leave out. It never covers gems, stones, medals, keys or purchases: rank those as
+  below.
+- **Survival upgrades** are ranked by `survival_rank {candidates: [{stat, toLevel}], snapshotsDir}`:
+  waves gained per billion coins, from a model fitted to this account's own runs. Use it when the
+  bottleneck is survival, or to test a specific workshop buy. `toLevel` is the level to reach, not levels
+  to add. Read the ranking by `fit.leaveOneOutError` (0.11 means a predicted death wave is off by 11% on
+  average, so a smaller gain is noise) and by `fit.runsUsed`; it does not see the Wall, enhancements or
+  attack levels.
 - **Costs and durations** come from the calculators, not memory: `form_calc` for the common cases (lab
   research, module cost, UW stones — small answers), or `calc_list` to find a handle, `calc_describe` for
   its parameters when unclear (its answers are long), `calc_run` for the value (`lab.coinCost`, `lab.durationDays`,
@@ -172,9 +207,10 @@ Then put numbers on the candidates:
   `lab.coinCostBetween`, `lab.durationDaysBetween`, `bot.statCostBetween`, `guardian.statCostBetween`,
   `module.shardCostBetween`, `workshop.coinCostBetween`, …): one call, current level to target, and
   `null` instead of a partial total when a level does not exist. Workshop buys are priced as the button
-  shows them by `workshop.upgradePrice`. A recommendation
+  shows them by `workshop.upgradePrice`, or with the account's own discount and the stat before and
+  after by `workshop.accountCoinCostBetween` (`savePath`). A recommendation
   the player can't afford for three months is a savings goal, and you can only tell which it is by
-  pricing it against their income: price ÷ the account's measured daily income, not
+  pricing it against their income: the `buyList` dates, or price ÷ `forecast.coinsPerDay.median`, not
   `mechanics.coinFarmDays` (it assumes 23 hours of runs a day).
 - **Game tables** answer the rest without guessing — stones per league and rank
   (`TOURNAMENT_REWARD_ROWS`), what an event's relics do (`EVENT_RELIC_SETS`), Vault key prices
@@ -186,10 +222,13 @@ Then put numbers on the candidates:
   labs do not apply to unlocks), the next UW and UW+ in stones, and the gem price to rush each running
   lab at the moment of the export.
 - **Coin what-ifs** come from `coin_bonus`: pass `tier` to see the bonus on another farming tier, or
-  `overrides` to see what equipping the Coins card, another relic or a generator change would do. It is a
-  multiplier on what a run earns, so weigh a higher tier's bonus against how far the run gets there.
-- **Ordering** can be informed by `plan_effective_path` (damage / economy / health / regen). Treat it as a
-  ranking aid and read its "left out and why" output; check what starting levels it used before trusting it.
+  `overrides` to see what equipping the Coins card, another relic or a generator change would do, or
+  `scenarios` to price several at once (each may carry `dissonanceWave {tier, wave}` for a Dissonant run
+  reaching that wave). It is a multiplier on what a run earns, so weigh a higher tier's bonus against
+  how far the run gets there.
+- **Ordering** outside the plan's two queues can be informed by `plan_effective_path` (damage / economy /
+  health / regen; `scenarios` re-plans with a change to compare rankings). Treat it as a ranking aid and
+  read its "left out and why" output; check what starting levels it used before trusting it.
 - **Mechanics** you're unsure of: `oracle_search` → `oracle_get`, `oracle_traps`, `wiki_search` →
   `wiki_page`. Expand any acronym the player uses with `oracle_expand` or `define_term` rather than
   guessing — several look alike and mean different things.
@@ -249,7 +288,8 @@ A target that is itself permanent (the next UW unlock, a UW stat level, a lab) c
 line here as well — the player may act on this section months after reading the rest.
 
 ## Lab queue
-What should be running in each slot, in order, with durations.
+What should be running in each slot, in order, with durations — from `labSchedule` when the plan ran:
+the lab, when the slot frees and when it finishes in the player's local time, and the coins to have ready.
 
 ## Stop / avoid
 Things the account is currently doing or tempted to do that waste resources, with the reason.
@@ -273,7 +313,8 @@ Finish by appending the date, the game version and your "do these now / save tow
 
 - **Their data outranks the playbook.** If the references say "usually X" but this account's numbers say
   Y, go with the numbers and explain the difference.
-- **Plan on the median.** One lucky run isn't the account's income.
+- **Plan on the median.** One lucky run isn't the account's income. Two runs with nothing changed can
+  differ two- or threefold from the perks taken, so never judge a purchase by the run before and after it.
 - **Compounding first.** Economy and lab speed pay for everything else; a damage upgrade that doesn't
   unlock a higher farming tier or a better tournament result is usually premature.
 - **Few moves, clearly ranked.** Three well-argued moves beat a list of fifteen. Say what to ignore, too.

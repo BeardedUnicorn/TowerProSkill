@@ -95,6 +95,7 @@ Fill this in before forming an opinion. If a line can't be filled, it goes under
 | Progress | best wave per tier, highest tier, milestones claimed | TierRecords, Milestones, EffectivePathsSettings |
 | Currencies | coins, gems, stones, medals, cells, keys, bits/tokens, shards by type, reroll shards | Currencies, Modules, Vault |
 | What each balance can open | next workshop unlock per tab (coins), next UW and UW+ (stones), Rush price of each running lab (gems), and whether the balance covers it | `next_unlocks` |
+| Income and uptime | coins and cells per day the account sustains, hours a day in a run, when income last changed, paused runs | `plan_spending` → `forecast` (SDK 3.0.0); by hand from the run list on older servers (§4) |
 | Coin multiplier | Total Coin Bonus rows at the farming tier; which rows sit at x1; the same at a candidate tier | `coin_bonus` (and `coin_bonus {tier}`) |
 | Workshop | levels vs caps for attack/defense/utility, enhancements, which presets exist and what they are for | Workshop, WorkshopUnlocks, GlobalPresets |
 | Labs | slots owned (`labsUnlocked` + 1), **what is running in each and time left, any empty slot**, levels of the high-value labs, lab speed (lab level, relic `LabSpeed` total, Vault), total researched/maxed | Labs, `workshop.relicBenefitByStat` |
@@ -121,7 +122,11 @@ perma. Perma is only defined for UWs that have both stats (`glossary.md`).
 Split runs into farming, tournament and Dissonant (`isTournament`, `dissonanceType`) before any statistic;
 mixing them makes every median meaningless. Then, per group and per tier:
 
-- **Income**: coins/hour and cells/hour per run = earned ÷ **real** time (the player's actual clock).
+- **Income**: `plan_spending.forecast` gives the median coins/hour and cells/hour of full farm runs
+  since income last changed, with a 25th–75th percentile band, and per day at the hours really run. Check
+  `runsUsed`: after a pack or a coin-bonus step (`regimeBreaks`) only the runs since count, and a band on
+  one or two runs means little. By hand (older servers, or as the cross-check): coins/hour and
+  cells/hour per run = earned ÷ **real** time (the player's actual clock).
   Report the **median** over recent runs and the spread. `battle_history`'s own `coinsPerHour` is a mean of
   the three best runs — a peak, useful as "what the build can do", not as income.
 - **Tier comparison**: if runs exist on more than one tier, compare median coins/hour and cells/hour
@@ -131,8 +136,11 @@ mixing them makes every median meaningless. Then, per group and per tier:
   it to say how much shorter the run may get and still come out ahead.
 - **How runs end**: tabulate `killedBy` and the death wave. A consistent killer at a consistent wave is a
   wall you can name and address; scattered causes suggest a build that simply runs out of scaling.
-- **Uptime**: the share of the clock the tower is actually in a run. Sum real run time over the window the
-  30 runs span and divide by that window; also count runs per day. Daily income = coins/hour × hours in a
+- **Uptime**: the share of the clock the tower is actually in a run. `forecast.uptime` has it for the
+  last day, the last week and the whole window (`hoursPerDay`, `share`); a last day far above the week is
+  a habit that just changed, not the norm. By hand: sum real run time over the window the
+  30 runs span and divide by that window (a run's `battleDate` is its end); also count runs per day.
+  The run in progress is not in the list: `readCurrentRunProgressFromSaveRoot` has its hours and coins. Daily income = coins/hour × hours in a
   run, so an account that is in a run a third of the day has a bigger lever in "start another run" than in
   any upgrade. This is often the largest single finding — compute it every time.
 - **Run length**: real hours per run vs how the player plays (overnight, attended). A run that ends after
@@ -145,6 +153,8 @@ mixing them makes every median meaningless. Then, per group and per tier:
 - **Survival lines**: damage taken, what blocked it (defense %, absolute, shield, wall), regen and
   lifesteal, death defy/second wind use. A health build whose mitigation lines are small relative to
   damage taken is under-defended; a damage build taking almost nothing is fine.
+- **AFK or active**: run records do not say. For the run in progress, `readInRunLevelsFromSaveRoot`
+  splits in-run levels into free and bought per tab; cash spent on a tab means it was played actively.
 - **Trend**: are wave and income rising across the 30 runs? Flat for weeks with coins banking up means
   spending is the problem, not the build.
 
@@ -155,9 +165,9 @@ Pick the one that best fits; it becomes the report's headline.
 | Bottleneck | Looks like | Usual direction |
 |---|---|---|
 | **Economy-limited** | Runs are long and stable, labs/workshop upgrades wait on coins, coins/hour flat, coin UWs under-levelled or out of sync, coin labs/cards/perks behind, not using Dissonance | Raise coin multipliers before anything else; check farming tier; fix sync. |
-| **Survival-limited** | Runs end early on the farmed tier at a repeatable wave to a repeatable killer; income per hour is fine while alive but runs are short; moving up a tier collapses income | Defense/health/regen/wall labs and workshop, the right defensive cards and module, or drop a tier if that earns more per hour. |
+| **Survival-limited** | Runs end early on the farmed tier at a repeatable wave to a repeatable killer; income per hour is fine while alive but runs are short; moving up a tier collapses income | Defense/health/regen/wall labs and workshop, the right defensive cards and module, or drop a tier if that earns more per hour. `survival_rank` scores the workshop options in waves per billion coins. |
 | **Damage-limited** | Bosses or fleets leak, runs end by being overrun late rather than burst down; tournament placement stalls while farming is fine; kill mix leans on a source that stops scaling (orbs at T14+) | Damage labs, attack workshop/enhancements, damage UWs and their sync, cannon module, tournament preset. |
-| **Time/lab-limited** | Coins pile up unspent, workshop near caps, every useful lab is days-to-weeks long; or slots sit idle / run cheap filler | Lab speed, slot count, queue discipline, cells for speed-ups on the long chains; choose labs by value per day, not per coin. |
+| **Time/lab-limited** | Coins pile up unspent, workshop near caps, every useful lab is days-to-weeks long; or slots sit idle / run cheap filler | Lab speed, slot count, queue discipline, cells for speed-ups on the long chains; choose labs by value per day, not per coin (`plan_spending`: `labQueue`, `labSchedule`, `boostPolicy`). |
 | **Stone-limited** | Clear UW targets exist but stone income (league results) can't fund them | Tournament performance is the lever: preset, cards, league strategy. |
 | **Attention-limited** | Unclaimed missions/events, relics left in the mail (`mailedCount`), missed tournaments, idle lab slots, an empty or locked bot sync slot, banked gems/medals with obvious uses, stale export | Routine fixes first — they are free. |
 
@@ -172,11 +182,14 @@ huge coin balance isn't — it is undecided or time-limited.
 ## 6. From diagnosis to a ranked list
 
 1. List candidates that relieve the bottleneck (from the matching meta file), plus any free fixes.
-2. Price each one for this account (`calc_run`), and convert to time at the account's median income: coins
-   ÷ coins/hour, stones ÷ stones per week from the current league, lab days at current lab speed.
+2. Price each one for this account (`calc_run`), and convert to time at the account's median income: the
+   `buyList` dates from `plan_spending` (or coins ÷ `forecast.coinsPerDay.median`), stones ÷ stones per
+   week from the current league, lab days at current lab speed.
 3. Estimate the payoff in the unit of the bottleneck (income multiplier, waves survived, damage
-   multiplier, days saved). `plan_effective_path` can order economy/damage/health/regen purchases; check
-   its starting levels and read what it left out. Where the payoff can't be quantified, say so and rank by
+   multiplier, days saved). `plan_spending` puts coin labs and coin buys in coins per day with payback
+   days; `survival_rank` puts survival workshop levels in waves. Both are models fitted to a few runs:
+   quote their error and warnings with the number. `plan_effective_path` can order
+   economy/damage/health/regen purchases; check its starting levels and read what it left out. Where the payoff can't be quantified, say so and rank by
    reasoning.
 4. Rank by payoff per unit of the constrained resource. Different currencies don't compete — coins, stones,
    gems, medals, keys and cells each get their own best use — so "do now" can hold one move per currency.

@@ -2,7 +2,7 @@
 
 Verified against game version: **v29.2.3** (build 1301; patch note dated 2026-11-24)
 Reference files written: 2026-11-20, updated 2026-11-26
-Verified against SDK: `@beardedunicorn/thetowersdk` **2.1.0**
+Verified against SDK: `@beardedunicorn/thetowersdk` **3.0.0**
 
 Main sources
 - SDK knowledge base (`TheTowerSDK`): `facts/v29.0.0`, `facts/v29.2.0`, `facts/v29.2.1`, `facts/v29.2.2` (286 on-screen readings of the live game, 2026-11-24, and the Milestones screen for tiers 1–15), compartments, and the patch-note archive (261 notes, 2021-07-15 to 2026-11-24, ingested from the official announcement channel). SDK 1.7.2 checked a build-1301 export (2026-11-25) field by field and re-read the vault, card, daily-mission and bot tables from that build; SDK 2.0.0 added `facts/v29.2.3`: 60 Workshop prices read on screen on build 1301 at x1, x5, x10 and x100, and a second Workshop preset's displayed values. Those are the newest on-screen checks; every other screen was last read on v29.2.2.
@@ -83,7 +83,7 @@ Community strategy lags the game. At the pin, almost no published guide covers v
 - Fixed new players (and players returning after a very long absence) being shown the login screen instead of starting their first game. The note says it should not affect existing players. No balance change. `[mechanic]`
 - A build-1301 export has the same 456 fields at data version 35 as build 1296, and every save reader returns as before (SDK 1.7.2).
 
-### Corrections from reading the live game (SDK 1.3.0–2.1.0, 2026-11-24 to 2026-11-26)
+### Corrections from reading the live game (SDK 1.3.0–3.0.0, 2026-11-24 to 2026-11-26)
 These are not game changes. They are things earlier SDK data, the wiki or guides had wrong, now checked on screen. `[mechanic]`
 - The Battle tab's **Total Coin Bonus** includes the selected tier's coin bonus and every row multiplies. Read it with `coin_bonus`.
 - Songs and profile banners pay a coin bonus (+0.6% each), like themes.
@@ -99,6 +99,13 @@ These are not game changes. They are things earlier SDK data, the wiki or guides
 - The Free Upgrades card adds its points to the Workshop's free-upgrade chances before relics multiply them.
 - Displayed Health Regen is table × lab × (1 + relics) × (1 + Armor Health Regen substat); displayed Defense Absolute is table × lab × (1 + relics).
 - The pre-v29 Vault trees still have calculators and charts in the SDK, labelled pre-v29 since 2.1.0. The current Vault is priced by `vault.v29.*`.
+- From one account's run records and twenty stored exports (SDK 3.0.0). These hold for that account; the SDK states them as rules where the game's own figures agree:
+  - A run record's date is the run's end, not its start.
+  - One run's coins differ from the next by two or three times with nothing bought (the perks taken), so a pair of runs cannot show whether a pack or a bonus arrived in full.
+  - A kill pays its enemy's base coins at any wave; the SDK's coin simulation multiplied them by the wave before 3.0.0 and was about 70 times the records at wave 2,000.
+  - A skipped wave spawns nothing, the first of a chain included.
+  - Labs are limited by slot time, not coins. `plan_spending` ranks them on their own queue.
+- The wave survival model behind `survival_rank` is fitted to an account's runs, not derived from game data. Quote it as a model.
 - Still unexplained by the SDK (do not compute these, read them in game): Chain Lightning Quantity, Spotlight Bonus, and the Workshop's displayed Knockback Force, Rend Armor and Wall rows.
 
 ## 3. Things older guides get wrong after v29

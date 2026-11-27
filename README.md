@@ -18,7 +18,7 @@ Ask Claude to review your account and you get a coaching report:
 - **Do these now** — one to three moves, each with the reason, the cost, the expected effect, and a warning
   when the choice is permanent
 - **Save toward** — the next target for each currency (stones, gems, coins, medals, cells, keys, bits, shards)
-- **Lab queue** — what should be running in every slot
+- **Lab queue** — what should be running in every slot, when each slot frees and the coins to have ready
 - **Stop / avoid** — where resources are being wasted
 - **Run review** — what your last 30 runs show about how the tower dies and where the damage comes from
 - **Since last time** — on repeat sessions, what changed and whether earlier advice paid off
@@ -54,8 +54,9 @@ distinction in its advice.
 ### 1. Install the TheTowerSDK MCP server
 
 Version 1.5.0 or later is needed for unlock pricing and the coin-bonus breakdown. The skill is checked
-against 2.1.0, which adds range pricing (a run of levels in one call), Vault key prices for the current
-Vault and the save's history as series; older servers still work with less.
+against 3.0.0, which adds the spending plan (income the account sustains, what the next coins should buy
+and when, a lab schedule, a boost budget) and a survival ranking fitted to your own runs, on top of
+2.1.0's range pricing, current Vault key prices and history series; older servers still work with less.
 
 **Claude desktop app:** download `thetowersdk.mcpb` from the SDK's
 [latest release](https://github.com/BeardedUnicorn/TheTowerSDK/releases/latest) and open it. Nothing to build.

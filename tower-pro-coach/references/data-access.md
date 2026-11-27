@@ -1,6 +1,6 @@
 # Data access — reading the whole account through the Tower SDK MCP
 
-Everything here was checked against `BeardedUnicorn/TheTowerSDK` (`@beardedunicorn/thetowersdk` 2.1.0,
+Everything here was checked against `BeardedUnicorn/TheTowerSDK` (`@beardedunicorn/thetowersdk` 3.0.0,
 `mcp/server.mjs`) and real exports from v29.2.2 (build 1296) and v29.2.3 (build 1301). Only this server
 is supported.
 
@@ -49,8 +49,18 @@ server process must also be restarted, because a running server keeps the old `d
 **Which version is running:** from 2.1.0 the server writes one line to its log (stderr) at start:
 `[thetowersdk] <version>: <n> tools, <n> prompts, export <path> | no export found, notes in <dir>`. A
 player who can open the MCP log can read the version and whether the export was found from it. Without the
-log, tell versions apart by what answers: `calc_list {filter: "vault.v29"}` matches four calculators
-from 2.1.0, and `chart_series` / `save_series` exist from 2.0.0.
+log, tell versions apart by what answers: `plan_spending` and `survival_rank` exist from 3.0.0,
+`calc_list {filter: "vault.v29"}` matches four calculators from 2.1.0, and `chart_series` /
+`save_series` exist from 2.0.0.
+**Older than 3.0.0:** no `plan_spending`, `survival_rank`, `planning.*`, `survival.*`, `history.*` or
+`currentRun.*` calculators, no `workshop.accountCoinCostBetween`, and `coin_bonus` / `plan_effective_path`
+refuse `scenarios`. Work out income and uptime by hand (§5 "Rates", `account-assessment.md` §4), date a
+purchase as price ÷ measured daily income, ask one `coin_bonus {overrides}` what-if per call, and build
+the lab queue from `lab.durationDaysBetween`. Thirteen formatting handles were renamed in 3.0.0
+(`formatting.formatCompact` → `format.compact`, …); the old names no longer resolve. The resource-drops
+coin simulation (`simulateResourceDropsCoins`, `simulateWaveCoinRows`, `accumulateWaveEcon`) returns
+different totals from 3.0.0 — a kill no longer pays more at a higher wave and a skipped wave spawns
+nothing — so never set a figure from it beside one quoted from an older build.
 **Older than 2.1.0:** no `vault.v29.*` calculators. The `vault.nodeKeysCost`, `vault.nodeKeysBetween` and
 `vault.treeKeysRemaining` handles that build does have price the **pre-v29** trees: never quote them for
 a current account. Read `VAULT_V29_*` with `find_rows` instead.
@@ -100,7 +110,8 @@ adb pull /storage/emulated/0/Android/data/com.TechTreeGames.TheTower/files/tool_
 ```
 
 **The server finds the file itself (SDK 1.2.0+).** Every save tool that takes `path` (`decode_save`,
-`run_extractor`, `read_save_field`, `battle_history`, `save_series`, `next_unlocks`, `coin_bonus`) may be called with no
+`run_extractor`, `read_save_field`, `battle_history`, `save_series`, `next_unlocks`, `coin_bonus`,
+`survival_rank`, `plan_spending`) may be called with no
 `path`: the server then reads the file the `TOWER_TOOL_EXPORT` environment variable names, or on a Mac
 the game's own container. Try `decode_save {}` first. Its answer carries the absolute `path` it read —
 tell the player which file that is, and reuse that string as `savePath` for `calc_run` and
@@ -142,7 +153,9 @@ either way. Expect fields the schema does not name, and `null` where a number wa
 | `battle_history` | `path`, `kind` (`all` \| `farming` \| `tournament`), `detail` (boolean), `offset`, `limit` | Default 10 runs, max 50. See §5. With `detail: true` a page stops early when it gets large (`sizeLimited`, with the `offset` for the next page); use `limit` ≤ 3 with it. |
 | `save_series` | `path`, `series`, `offset`, `limit` (default 40, max 100) | The save's history as `{x, y}` points (SDK 2.0.0). Omit `series` to list what this save holds (`id`, `title`, `points`, `unit`); nine ids on a developed account: `save:battle:coins-per-hour`, `:wave`, `:coins`, `:cells` (one point per run, `x` = run date in ms since the epoch), `save:tournament:wave`, `save:tournament:rank` (per tournament by date; one still running is left out, since rank 0 is not a placing), `save:tier:highest-wave`, `:highest-coins`, `:highest-cells` (`x` = tier). See §5. |
 | `next_unlocks` | `path` | What the account can open next, beside the balance that pays for it. `balances {coins, stones, gems}`; `workshop.{attack,defense,utility}` `{unlocked, next: {opens[], coins}, affordable}`; `ultimateWeapon {owned, stones, affordable}`; `ultimateWeaponPlus {owned, stones, allWeaponsOwned, affordable}`; `labs {gemRushEfficiency, maxedLabs, running[{slot, lab, completedLevel, remainingSeconds, rushGems, affordable}]}`. `next: null` / `stones: null` = nothing left to unlock there. `affordable: null` = cannot tell, not "cannot pay". See §7. |
-| `coin_bonus` | `path`, `tier` (number; default = the tier selected in the save), `overrides` (object merged one level deep over the answer's `input`) | The Battle tab's **Total Coin Bonus** row by row: `bonus {disableAds, starterPack, epicPack, activeCards, modules, difficultyTier, themes, relics, enhancement, dissonance, total}` — every row is a multiplier and `total` is their product — plus the `input` it was built from. With `overrides` the answer adds `whatIf {overrides, input, bonus, totalRatio}`: the new rows beside the old, and `totalRatio` = new total ÷ old total. An override key the `input` does not have is refused. See §7. |
+| `coin_bonus` | `path`, `tier` (number; default = the tier selected in the save), `overrides` (object merged one level deep over the answer's `input`), `scenarios` (SDK 3.0.0: `[{name*, tier, overrides, dissonanceWave {tier, wave}}]`) | The Battle tab's **Total Coin Bonus** row by row: `bonus {disableAds, starterPack, epicPack, activeCards, modules, difficultyTier, themes, relics, enhancement, dissonance, total}` — every row is a multiplier and `total` is their product — plus the `input` it was built from. With `overrides` the answer adds `whatIf {overrides, input, bonus, totalRatio}`: the new rows beside the old, and `totalRatio` = new total ÷ old total. An override key the `input` does not have is refused. With `scenarios` the answer adds `scenarios[{name, tier, total, ratioToNow, changedRows[{row, from, to}]}]`, each against the save as it is. See §7. |
+| `plan_spending` | `path`, `snapshotsDir` (folder of stored readings; `~` is expanded), `timeZone` (IANA name such as `America/Denver`; UTC when omitted), `horizonDays` (default 3, max 14), `survival` (boolean, default true; false is fast and leaves workshop levels unranked), `workshopTargets` (`[{stat, toLevel}]`; default each survival stat to its next hundred), `dissonantWave`, `cellFloor`, `maxBoost`, `boostPrices` (`{"1.5": 15, "2": 100}`, cells per hour for one slot, as read on the Labs screen) | SDK 3.0.0. What the next **coins** should buy and when; up to a minute with the survival model. `{path, now, coins, cells, forecast, coinModel, labQueue[], coinQueue[], notRanked[], buyList, labSchedule, boostPolicy, dissonance, notes[], warnings[]}`. A part that could not be made is left out, not `null`. Field by field in §7 "Reading `plan_spending`". Never covers gems, stones, medals or purchases. |
+| `survival_rank` | `candidates*` (`[{stat, toLevel}]`; `stat` is Health, Health Regen, Defense Percent, Defense Absolute, Recovery Amount, Max Recovery, Package Chance, Lifesteal, Death Defy, Enemy Attack Level Skip or Enemy Health Level Skip), `path`, `snapshotsDir`, `tier` (default: the tier of the latest farming run), `mode` (`afk` \| `active`), `seeds` (default 100, max 400), `fitRuns` (default 6, max 12), `fitSeeds` (default 8, max 24) | SDK 3.0.0. About half a minute. `{tier, mode, baseline {p10, median, p90}, ranked[{stat, fromLevel, toLevel, coins, medianWavesGained, wavesPerBillionCoins, deathWave {p10, median, p90}}], fit {leaveOneOutError, runsUsed, perRun[], skipped[{runDate, wave, reason}], calibration}, assumptions, notes[], warnings[]}`. `coins` is the Workshop price at the account's discount. See §7. |
 
 `read_save_field`'s `extractor` also accepts other save functions that take the save root:
 `listImportableBattleRuns` (the raw run list) and `computeCoinsPerHourFromSaveRoot` (one number) both work.
@@ -155,7 +168,7 @@ either way. Expect fields the schema does not name, and `null` where a number wa
 | `get_export` | `name*`, `limit` (default 40, max 100) | Preview, 12,000-character budget. |
 | `find_rows` | `name*`, `where`, `search`, `fields` (string[]), `offset`, `limit` (default 20, max 100) | Rows of one table. Object-keyed exports gain a `_key` column. Note the column parameter is `fields` here and `pick` on `read_save_field`. |
 | `describe_schema` | `table` (omit to list tables) | Declared shape of a data table. |
-| `calc_list` | `filter`, `offset`, `limit` (default 60, max 100) | ~1,600 calculators; always filter, and page with `offset` when `matched` exceeds `shown`. Save-reading ones are `save.*`. |
+| `calc_list` | `filter`, `offset`, `limit` (default 60, max 100) | ~1,700 calculators; always filter, and page with `offset` when `matched` exceeds `shown`. Save-reading ones are `save.*`. |
 | `calc_describe` | `id*` | Params with units, invariants, linked oracle traps. |
 | `calc_run` | `id*`, `args` (object — calculator parameters go **inside** `args`), `savePath` | `savePath` decodes the export and passes it as the calculator's `root` / `parsedRoot` parameter. Unknown top-level keys are refused — a calculator parameter placed beside `args` instead of inside it is an error. A large result comes back as a preview, not whole. |
 | `calc_chart` | `chart` | Which calculators produce a chart's numbers. |
@@ -163,7 +176,7 @@ either way. Expect fields the schema does not name, and `null` where a number wa
 | `chart_rows` | `chart`, `args` (string[]), `offset`, `limit` (default 40, max 100) | Published table rows as formatted text; omit `chart` to list the 72 charts. Handy ids: `vault:v29:harmony` / `:power` / `:enemy` (the two `vault:upgrades-and-cost:*` charts are pre-v29), `tournaments:rewards:<league>`, `ultimate-weapons:unlocks:stone-ladder`, `ultimate-weapons:stone-costs:<weapon>`, `bots:upgrades-and-costs:<bot>`, `guardians:upgrades-and-costs:<chip>`, `modules:costs:upgrade-costs-by-level`, `labs:gems:rush-gems-by-time-left`, `tiers:coins:coin-bonus-by-tier`, `currencies:cells:elite-cells-by-tier`. Before SDK 2.0.0 the Golden, Thunder and Amplify bot charts all returned Flame Bot's rows. |
 | `chart_series` | `series`, `family` (`lab`, `workshop`, `card`, `ultimate-weapon`, `bot`, `guardian`, `module`, `enhancement`, `vault-v29`, `vault`, `unlock-ladder`), `entity`, `offset`, `limit` (default 40, max 100) | One cost or value curve as plain `{x, y}` numbers by id, e.g. `lab:damage:cost` (SDK 2.0.0). Omit `series` to list ids, narrowed by `family` / `entity`. `vault-v29` is the current vault; `vault` is the pre-v29 trees. For a price to quote, a `…Between` calculator is one call; this is for showing the player a whole curve. |
 | `form_calc` | `id`, `input` (object) | The site's form calculators. Omit `id` to list; an `id` alone returns its fields and defaults. Ids differ from `calc_list` handles. The 15 ids: `lab.research`, `uw.stones` (one stat from `currentLevel` to `targetLevel`, per-level and total — use it instead of summing `uw.stoneCost`), `uw.inner-land-mines`, `assist.stones`, `module.cost`, `bot.upgrade` (medals), `guardian.upgrade` (bits), `workshop.upgrade` (enhancements only), `dissonance.boost` (the multiplier from per-tier bests), `uptime.ratio` (UW duration ÷ cooldown), `damage.reduction`, `thorns.damage`, `economy.coins-per-kill`, `enemy.wave`, `drops.enemy`. |
-| `plan_effective_path` | `family*` (`damage` \| `economy` \| `health` \| `regen`), `variant*` (damage: `lab-time`, `lab-coins`, `stone`, `coin`, `keys`; economy: `time`, `coin`, `stone`; health: `lab-time`, `lab-coins`, `stone`, `coin`; regen: `lab-time`, `lab-coins`), `steps` (default 10, max 200), `savePath` (**economy only**), `levels` (object merged over all-zero) | Returns `steps[{step,name,level,cost,roi}]` and `excluded[{sheetName,reason}]`. See §7 on zero-start. |
+| `plan_effective_path` | `family*` (`damage` \| `economy` \| `health` \| `regen`), `variant*` (damage: `lab-time`, `lab-coins`, `farm-time`, `stone`, `coin`, `keys`; economy: `time`, `coin`, `stone`; health: `lab-time`, `lab-coins`, `stone`, `coin`; regen: `lab-time`, `lab-coins`), `steps` (default 10, max 200), `savePath` (**economy only**), `levels` (object merged over all-zero), `scenarios` (SDK 3.0.0: `[{name, levels}]`, each merged over the starting levels) | Returns `steps[{step,name,level,cost,roi}]` and `excluded[{sheetName,reason}]`; with `scenarios`, also `scenarios[{name, steps[], excluded}]` (`excluded` is a count there) to compare rankings. From a save it also passes the account's enhancement levels and lab speed (SDK 3.0.0), and a maxed candidate is excluded as "at its maximum level". See §7 on zero-start. |
 | `patch_notes` | **one** of `query`, `introduced`, `version`, `from`+`to`, `recent` per call (given two, it answers one and says which; a `from` later than `to` is refused); plus `limit` (default 5, max 25), `full` (boolean; bodies are cut at 600 chars without it) | With no argument: archive range and latest versions. Use to check whether advice predates a patch. |
 | `wiki_search` | `query*`, `limit` (default 10) | Real page titles. Network. |
 | `wiki_page` | `title*`, `section`, `offset`, `refresh`, `sourceId` (`fandom` \| `gamevault`) | 12,000 characters per call; `next` → `offset`. Wiki text is CC-BY-SA. Network. |
@@ -201,14 +214,20 @@ fields}`; calculators with `calc_run {id, args}`.
 | Spotlight coverage | `calc_run spotlight.coverage {args: {quantity, angleDegrees}}` | Share of the field lit, capped at 1. Once it saturates, more Angle is worth nothing. |
 | Workshop coin price, as the buy button shows it | `calc_run workshop.upgradePrice {args: {stat, fromLevel, count, sectionDiscountPercent}}` → `{toLevel, levels, coins}` (SDK 2.0.0) | `fromLevel` = the level owned, `count` = 1, 5, 10 or 100, `sectionDiscountPercent` = that tab's Workshop Discount lab as a percentage (lab level 30 is 15). Each level is discounted and rounded on its own, then summed, as the x5 / x10 / x100 buttons do; `levels` below `count` means the upgrade ran out. Damage 100→110 at 15% = 835,703. For a long run at list price: `workshop.coinCostBetween {stat, fromLevel, toLevel}`. All 48 upgrades are priced. |
 | What a workshop level gives | `calc_run workshop.statValue {args: {stat, level}}` → `{value, unit, coinCost, cashCost}` (SDK 2.0.0; `mechanics.workshopStatValue` before) | The game's value with its `unit` named (`amount`, `multiplier`, `fraction`, … — a `fraction` of 0.0055 is 0.55%), workshop alone — no lab, relic, card or module. `coinCost` is the list price of the **next** level (level → level + 1). `workshop.screenValue` builds the number the Workshop row shows from labs, relics, cards and modules, but wants a full input object: read `calc_describe` first. Knockback Force, Rend Armor and the Wall have no screen formula; read those in game. |
+| A range of workshop levels at this account's discount, with the stat before and after | `calc_run workshop.accountCoinCostBetween {savePath, args: {stat, fromLevel, toLevel}}` (SDK 3.0.0) | → `{coins, listCoins, discountPct, valueBefore, valueAfter}`. Reads the tab's discount lab from the save and rounds each level as the game does (Health 1300→1400 at 15% = 3,661,257,391 against 4.31B list). Unlock prices are not priced here. |
+| The account's lab speed and coin discount, ready for a calculator | `run_extractor readLabCostModifiersFromSaveRoot` → `{coinDiscountLabLevel, labSpeedLabLevel, labSpeedRelicPct}` (SDK 3.0.0) | Pass as `modifiers` to `lab.coinCostBetween` / `lab.durationDaysBetween`; saves reading the relics for `LabSpeed`. `labSpeedRelicPct` is a fraction despite the name (0.035 = +3.5%). |
+| The run in progress | `run_extractor readCurrentRunProgressFromSaveRoot` → `{tier, wave, startedAt, realSeconds, gameSeconds, coinsSoFar, cellsSoFar}`; `readInRunLevelsFromSaveRoot` → `rows[{category, stat, workshop, inRun, gained}]`, `categories[{category, gained, fromFree, bought, freeCount}]`, `mode` (`afk` \| `active`) (SDK 3.0.0; `calc_run currentRun.progress` / `currentRun.inRunLevels` with `savePath` are the same) | `startedAt` is the latest the run can have begun: paused time is not counted. `bought` above zero on a tab means cash was spent there, so the run is `active` even if the player calls it AFK; judge per tab. |
+| One step of the plan on its own | `calc_run` with `savePath`: `planning.forecastIncome`, `planning.affordableBy {args: {list: [{name, coins}]}}` (dates for your own shopping list, bought in order), `planning.rankSpends`, `planning.scheduleLabs`, `planning.cellBudget`, `planning.dissonancePayback`, `survival.simulateRun` (predicted death wave) (SDK 3.0.0) | `plan_spending` runs them in the right order and is the normal route. `calc_run` cannot pass a snapshot folder, so these see only the current export; read `calc_describe` for the `options` fields. `history.snapshot` / `.diff` / `.timeline` / `.stateAt` take whole snapshots as arguments and are reached through `snapshotsDir`, not `calc_run`. |
 
 Cautions:
 - Calculators marked `tier: "generated"` in `calc_list` (all 273 `save.*` handles and most `data.*` /
   `mechanics.*` ones) have a signature but no written purpose or checked invariants. Read
   `calc_describe` first; skip any that wants an internal config object.
 - `mechanics.coinFarmDays` divides by coins/hour × **23 hours a day** (a planning-sheet default), not by
-  the account's real hours in runs. Do not use it for "how long to save for X": divide the price by the
-  account's measured daily income instead.
+  the account's real hours in runs. Do not use it for "how long to save for X": use `plan_spending`'s
+  `buyList` dates or `planning.affordableBy`, or divide the price by `forecast.coinsPerDay.median`.
+- `calc_describe` on the health, economy and coin-bonus models lists which inputs each includes and
+  leaves out (SDK 3.0.0). Read it before quoting one of those models as the whole picture.
 
 ### Tools the coach never calls
 
@@ -219,10 +238,15 @@ mechanics map and ledger under the server's directory). They exist for people ch
 
 ## 4. Save readers
 
-38 functions match `read*FromSaveRoot` in SDK 2.1.0 and `decode_save` runs all of them. Four are series
+46 functions match `read*FromSaveRoot` in SDK 3.0.0 and `decode_save` runs all of them. Four are series
 views added in 2.0.0 — `readSaveSeriesFromSaveRoot`, `readBattleHistorySeriesFromSaveRoot`,
-`readTournamentSeriesFromSaveRoot`, `readTierRecordSeriesFromSaveRoot` — which hold no data the other 34
-do not; skip them in a full read and use `save_series` when a series is wanted. (`decode_save`
+`readTournamentSeriesFromSaveRoot`, `readTierRecordSeriesFromSaveRoot` — which hold no data the others
+do not; skip them in a full read and use `save_series` when a series is wanted. Of the eight added in
+3.0.0, skip four more: `readWorkshopCoinCostBetweenFromSaveRoot` and
+`readEnhancementCoinCostBetweenFromSaveRoot` need arguments (`found: false` in `decode_save`; use
+`workshop.accountCoinCostBetween`), `readLabLevelsBySlugFromSaveRoot` repeats lab levels keyed by slug,
+and `readSurvivalAccountFromSaveRoot` is the survival model's own input (workshop, cards, labs and runs
+again). The other four are in the tables below. (`decode_save`
 lists whatever the installed build has — trust that list over this table.) Each returns an object or `null` when the save has no data for the
 feature; most carry `warnings: string[]` — a non-empty one usually means the save shape changed.
 
@@ -261,7 +285,11 @@ feature; most carry `warnings: string[]` — a non-empty one usually means the s
 | `readEventShopFromSaveRoot` | The running event: what it awards and what its shop sells | `event`, `saveName`, `eventNumber`, `medalsCurrentEvent`, `themes[]` `{kind, name, price, currency, coinBonus}` (`kind` is `tower` or `background`), `songs[]` `{name, price, currency, coinBonus}`, `earnTrack[]` `{index, label, rarity, medals, needsEventPass, owned}`, `relics[]` `{index, label, rarity, price, currency, fromEvent, owned}`, `rotatingRelicPrices[]` (gems, by rarity). **Two separate relic lists that never overlap.** `earnTrack` is the event's own relics, given free when `medalsCurrentEvent` earned in the event reaches `medals`; `needsEventPass: true` rows also need the paid event pass. `relics` is older relics the shop **sells** for `price` medals; `fromEvent` names the past event they came from. Never quote an `earnTrack` threshold as a price or the reverse. The save does not say which relics are on the rotating shelf. (Shape since SDK 1.7.1.) |
 | `readTotalCoinBonusFromSaveRoot` | The Total Coin Bonus at the selected tier | `input`, `bonus` — the same rows `coin_bonus` returns. Use the tool: it adds `tier` and what-ifs. |
 | `readPurchasesFromSaveRoot` | Permanent packs | `hasStarterPack`, `hasEpicPack`, `hasDisableAds`. Ownership flags only; no multiplier is inferred. |
-| `readCurrentRunFromSaveRoot` | Run in progress | `currentTier`, `currentWave`, in-run `upgradeLevel[]` / `upgradeDefenseLevel[]` / `upgradeUtilityLevel[]`. These are in-run cash upgrades, not Workshop levels. |
+| `readCurrentRunFromSaveRoot` | Run in progress | `currentTier`, `currentWave`, `roundActive`, in-run `upgradeLevel[]` / `upgradeDefenseLevel[]` / `upgradeUtilityLevel[]` (unnamed; `readInRunLevelsFromSaveRoot` names them), and from SDK 3.0.0 `realSeconds`, `gameSeconds`, `coinsSoFar`, `cellsSoFar`, `freeUpgrades`. These are in-run levels, not Workshop levels. |
+| `readCurrentRunProgressFromSaveRoot` | How long the run in progress has gone and what it has earned (SDK 3.0.0) | `tier`, `wave`, `startedAt` (export time less the real seconds played: the latest it can have begun), `realSeconds`, `gameSeconds`, `coinsSoFar`, `cellsSoFar`. A run in progress is not in the run list yet; this is how to count it. |
+| `readInRunLevelsFromSaveRoot` | The run in progress, one row per stat (SDK 3.0.0) | `rows[]` `{category, stat, workshop, inRun, gained}`; `categories[]` `{category, gained, fromFree, bought, freeCount}`; `mode` (`afk` \| `active`). `bought` is levels paid for with cash in the run. A tab with `bought` > 0 was played actively. |
+| `readLifetimeFreeUpgradesFromSaveRoot` | Free upgrades landed over the account's life, per tab (SDK 3.0.0) | `attack`, `defense`, `utility`. |
+| `readLabCostModifiersFromSaveRoot` | The inputs every lab price and duration needs (SDK 3.0.0) | `coinDiscountLabLevel`, `labSpeedLabLevel`, `labSpeedRelicPct`. |
 | `readEffectivePathsSettingsFromSaveRoot` | Reach | `highestTier` (last tier with a wave recorded), `highestWave`, `wavesByTier` (object tier → wave), `gameSpeed` (may be null). |
 
 ### Settings & metadata
@@ -341,7 +369,7 @@ answers carry the SDK's warnings and decoding. The snapshot script (`scripts/sna
 history between sessions; once it has run, its JSON holds the same reader output and is a convenient place
 to re-look-up a detail you already read, but it does not replace the read below.
 
-**Call sequence (~40 calls; batch the independent ones in parallel):**
+**Call sequence (~45 calls; batch the independent ones in parallel):**
 
 1. `decode_save {}` (or with `path`) — the file it read, reader list, which are `found`, warning counts, run count.
 2. `run_extractor` for `readExportInfoFromSaveRoot` — check `exportedAt`, `checked`, `warnings`.
@@ -349,6 +377,7 @@ to re-look-up a detail you already read, but it does not replace the read below.
    `readProfileFromSaveRoot` (personal data) and the four `read…SeriesFromSaveRoot` readers (the same
    runs, tournaments and tier records again as points; §4). Themes, collected theme names and runtime controls can be
    skipped unless asked. Small results arrive whole.
+   Also skip the four 3.0.0 readers §4 names as repeats or needing arguments.
    In the same batch: `next_unlocks {}` and `coin_bonus {}`.
 4. For every name in an answer's `outlined` (or a `truncated` list), page with `read_save_field`.
    On a developed account expect:
@@ -365,9 +394,12 @@ to re-look-up a detail you already read, but it does not replace the read below.
    the compact row lacks. About ten columns of 30 runs fit one page; make one call for
    `battleDate, tier, wave, realTime, gameTime, coinsEarned, cellsEarned, rerollShardsEarned, killedBy,
    isTournament, dissonanceType` and a second for the coins-by-source columns.
-7. Before advising: `oracle_footguns` (optionally with `mechanic`), then as needed
-   `coin_bonus {tier}` / `coin_bonus {overrides}` for coin what-ifs,
-   `plan_effective_path {family: "economy", variant, savePath}`, `calc_run`, `form_calc`, `patch_notes`.
+7. Run the snapshot script (SKILL.md Step 3), then `plan_spending {path, snapshotsDir, timeZone}` with
+   the player's snapshot folder. It takes up to a minute; start it while reading the rest.
+8. Before advising: `oracle_footguns` (optionally with `mechanic`), then as needed
+   `survival_rank {candidates, snapshotsDir}`, `coin_bonus {tier}` / `{overrides}` / `{scenarios}` for
+   coin what-ifs, `plan_effective_path {family: "economy", variant, savePath}`, `calc_run`, `form_calc`,
+   `patch_notes`.
 
 Never conclude "the player has none" from a preview: check `outlined`, `truncated`, `next` and `matched`.
 
@@ -376,7 +408,7 @@ Never conclude "the player has none" from a preview: check `outlined`, `truncate
 - **`null` is not zero.** A reader returning `null`, or a field that is `null`, means the save does not
   record it — not that the player has none.
 - **Newer game than the SDK.** `readExportInfoFromSaveRoot.checked: false`, or anything in its `warnings`
-  / `unknownKeys`, means the export is newer than the SDK was verified against (2.1.0: build 1301 =
+  / `unknownKeys`, means the export is newer than the SDK was verified against (3.0.0: build 1301 =
   v29.2.3, data version 35). Renamed fields then read as missing; tell the player and update the SDK.
   Rule out a stale build first (§1): an up-to-date checkout that was not rebuilt warns the same way.
 - **Module levels live on the slot since v29.** `readModulesFromSaveRoot.equipped[].level` is already the
@@ -458,10 +490,12 @@ Never conclude "the player has none" from a preview: check `outlined`, `truncate
 - `readLifetimeBreakdownFromSaveRoot.killsBySource` has shown `projectiles` and `deathRay` apparently
   swapped relative to per-run stats. Prefer the per-run kill split.
 - `readCurrenciesFromSaveRoot.earnedThisCycle` / `spentThisCycle`: the cycle length is not documented; do
-  not turn them into weekly rates. `battleDate` on a run appears to be the run's end time.
+  not turn them into weekly rates. `battleDate` on a run is the run's **end**, not its start (SDK 3.0.0:
+  across twenty stored exports a run first appears minutes after its `battleDate`).
 - `plan_effective_path`: `cost` and `roi` units are per variant (time, coins or stones) and it can report
   "prerequisite not met" for labs the account already has. Use the ordering, not the absolute values.
-- `form_calc lab.research` needs the account's lab speed and coin discount as inputs. Speed percent that
+- `form_calc lab.research` needs the account's lab speed and coin discount as inputs
+  (`readLabCostModifiersFromSaveRoot` has the three levels from SDK 3.0.0). Speed percent that
   matched `lab.durationDays` on a real save: ((1 + 0.02 × Labs Speed lab level) × (1 + lab-speed relic
   bonus) × slot boost − 1) × 100, where the relic bonus is `LabSpeed` from `workshop.relicBenefitByStat`
   (§3); coin discount from `calc_run lab.coinDiscount` with the Labs Coin Discount
@@ -473,3 +507,62 @@ Never conclude "the player has none" from a preview: check `outlined`, `truncate
   mitigation) is practical to read from the snapshot JSON once it exists.
 - `readPerkChoicesFromSaveRoot.autoPickOrder` is the player's ranking of perks; how many ranks are honoured
   depends on the Auto Pick Ranking lab level. Check that lab before saying a low-ranked perk never gets picked.
+- **Reading `plan_spending`** (SDK 3.0.0). Every gain is **coins per day**.
+  - `forecast`: `tier`, `coinsPerRun` / `coinsPerHour` / `cellsPerHour` / `coinsPerDay` / `cellsPerDay`
+    (each `{p25, median, p75}`), `hoursPerDay`, `runsUsed`, `regimeBreaks[{after, before, reason, ratio}]`
+    (`reason` is `coin-bonus` when two readings show the Total Coin Bonus stepped, `income-step` when only
+    the runs show it), `pausedRuns[]`, `uptime[{days, hoursPerDay, share}]` (last day, last week, whole
+    window), `warnings[]`. Only full farm runs after the last break set the rates: on one real account a
+    pack bought the day before left `runsUsed: 4` of 30. With one run the three percentiles are equal.
+  - `coinModel`: `passThrough` (the share of a coin-bonus gain that reaches recorded coins; every
+    coin-bonus gain in the queues is multiplied by it), `runToRunSpread` (how far this account's runs
+    differ with nothing changed: 1.56 on one account), `waveCoinDrift`, `pairs[]`, `sources[]`,
+    `killCoinScale`. Its warnings explain whether a change in income was distinguishable from that spread.
+  - `labQueue[]` / `coinQueue[]` rows: `candidate`, `kind` (`lab`, `workshop`, `enhancement`), `coins`,
+    `slotHours`, `gainPerDay {low, likely, high}`, `paybackDays`, `gainPerSlotHour`, `gainPerCoin`,
+    `totalCoins` / `totalSlotHours` (with `gates[{name, coins, slotHours}]` included), `permanent`,
+    `model` (for a workshop row, `wave survival (+57 waves from 2088)`), `confidence` (on workshop rows
+    it has equalled the survival fit's leave-one-out error; `null` elsewhere), `overlaps[]` (candidates
+    whose gain band overlaps this one: the order between them is not established).
+  - **The lab queue is sorted by gain per slot-hour, not by payback.** On one account its first row was
+    a lab costing 87B coins that pays back in 874 days, ahead of one paying back in 18. Read
+    `paybackDays` and `totalCoins`, and the top-level warning naming labs "not scheduled" because the
+    forecast cannot pay for them inside the horizon.
+  - A workshop row with `gainPerDay` 0 and `paybackDays: null` gained no waves in the model — an
+    "ignore for now", not a bug.
+  - `notRanked[{candidate, reason}]`: locked labs with the milestone that opens them, unmet
+    prerequisites, and what no model prices (Labs Speed and Labs Coin Discount, module slot levels,
+    workshop unlocks such as the Wall, the Recovery Package enhancement, attack workshop levels).
+    Labs Speed not being ranked says nothing about its worth: argue it from `meta-workshop-labs.md`.
+  - `buyList {balance, items[{name, coins, cumulativeCoins, affordableAt {early, likely, late}}]}`: the
+    coin queue bought in order from the coins on hand. Dates are UTC ISO strings.
+  - `labSchedule {timeZone, labSpeed, rows[], swaps[]}`: rows with `start: null` are running now; the
+    rest are what to start when each slot frees: `slot`, `lab`, `toLevel`, `start`, `finish`,
+    `startLocal`, `finishLocal`, `coinsNeeded`, `balanceWhenSlotFreed`, `boost`. Without `timeZone` the
+    local times are UTC and a warning says so: pass the player's zone (ask once, or use the session's).
+  - `boostPolicy {policy[{slot, multiplier, cellsPerDay}], cellsPerDay, netCellsPerDay, daysToFloor,
+    renewAt[], fallback[]}`. Prices are the wiki's unless `boostPrices` is passed; the warning says so.
+    Ask the player to read one price on the Labs screen before relying on the budget.
+  - `dissonance {tier, currentWave, currentBonus, rows[{wave, totalBonus, gain, gainPerDay, cost,
+    cellsCost, paybackDays}], breakEvenWave}`: `cost` is one farm run's coins given up. The waves are a
+    table, not a prediction.
+  - It reads the selected tier's farm runs. `survival: false` adds a warning that workshop levels were
+    not ranked.
+- **`snapshotsDir`** (`plan_spending`, `survival_rank`) takes one folder and reads its `.json` files, the
+  60 most recently written, not subfolders: pass the player's folder
+  (`~/.tower-coach/snapshots/<playerKey>`), not the snapshots root. Both the snapshot script's files and
+  kept `tool_export.json` copies are accepted; `advice-log.md` is ignored. A folder with nothing usable
+  is an `error` ("no usable readings"); then call again without it. Without it the tools assume every
+  past run was played with today's account, and say so in `warnings`.
+- **Reading `survival_rank`.** `toLevel` is the level to reach: a `toLevel` at or below the current level
+  comes back with `coins: 0`, `medianWavesGained: 0` and `wavesPerBillionCoins: null`. `baseline` is the
+  predicted death wave now. `fit.leaveOneOutError` is how far a held-out run's wave was missed on
+  average (0.106 on one account): a gain smaller than that share of the baseline is noise.
+  `fit.skipped[]` names runs left out and why — usually "workshop or cards changed between the readings
+  around this run", which more frequent snapshots cure. The model is fitted, not derived: it reads
+  workshop levels and the Health card, takes every run as AFK, and does not rank damage upgrades, the
+  Wall or enhancements reliably (its `warnings` list these every time). State a result as "the model
+  fitted to your runs predicts", never as a game rule.
+- **`coin_bonus` scenarios.** A scenario that only changes `tier` has come back with `ratioToNow: 1` and
+  no `changedRows` while its `total` differed: compare its `total` with the top-level `bonus.total`
+  yourself. A `dissonanceWave` at or below the tier's current Dissonant best changes nothing.
